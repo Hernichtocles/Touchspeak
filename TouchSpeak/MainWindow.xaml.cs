@@ -12,6 +12,7 @@ public partial class MainWindow : Window
     private readonly SpeechService _speech = new();
     private readonly WordPredictor _predictor = new();
     private AppSettings _settings = SettingsService.Load();
+    private DwellClicker? _dwell;
 
     private bool _loaded;
     private bool _suppressSpeak;
@@ -20,6 +21,9 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+
+        // Verweil-Klick (Kopfsteuerung); wird über die Einstellungen aktiviert.
+        _dwell = new DwellClicker(this, DwellOverlay);
 
         // Wire up the on-screen keyboard.
         Keyboard.CharInput += OnChar;
@@ -72,6 +76,15 @@ public partial class MainWindow : Window
 
         if (_settings.SpeakLanguage == SpeakLanguage.English) LangEnglish.IsChecked = true;
         else LangGerman.IsChecked = true;
+
+        DwellSlider.Value = Math.Clamp(_settings.DwellSeconds, DwellSlider.Minimum, DwellSlider.Maximum);
+        DwellEnabledBox.IsChecked = _settings.DwellEnabled;
+        if (_dwell != null)
+        {
+            _dwell.DwellSeconds = DwellSlider.Value;
+            _dwell.Enabled = _settings.DwellEnabled;
+        }
+        UpdateDwellLabel();
     }
 
     private void GatherSettings()
@@ -83,6 +96,8 @@ public partial class MainWindow : Window
         _settings.SpeakLanguage = LangEnglish.IsChecked == true ? SpeakLanguage.English : SpeakLanguage.German;
         _settings.GermanVoiceId = GermanVoiceBox.SelectedValue as string;
         _settings.EnglishVoiceId = EnglishVoiceBox.SelectedValue as string;
+        _settings.DwellEnabled = DwellEnabledBox.IsChecked == true;
+        _settings.DwellSeconds = DwellSlider.Value;
     }
 
     protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
@@ -91,6 +106,7 @@ public partial class MainWindow : Window
         SettingsService.Save(_settings);
         _predictor.SaveUserDictionary();
         _speech.Dispose();
+        _dwell?.Dispose();
         base.OnClosing(e);
     }
 
@@ -337,4 +353,29 @@ public partial class MainWindow : Window
     private void Voice_Changed(object sender, SelectionChangedEventArgs e) { /* persisted on close */ }
     private void Rate_Changed(object sender, RoutedPropertyChangedEventArgs<double> e) { /* persisted on close */ }
     private void Volume_Changed(object sender, RoutedPropertyChangedEventArgs<double> e) { /* persisted on close */ }
+
+    // ---------------- Head control / dwell click ----------------
+
+    private void Dwell_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_dwell != null) _dwell.Enabled = DwellEnabledBox.IsChecked == true;
+    }
+
+    private void DwellTime_Changed(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (_dwell != null) _dwell.DwellSeconds = DwellSlider.Value;
+        UpdateDwellLabel();
+    }
+
+    private void DwellMinus_Click(object sender, RoutedEventArgs e)
+        => DwellSlider.Value = Math.Max(DwellSlider.Minimum, DwellSlider.Value - 0.1);
+
+    private void DwellPlus_Click(object sender, RoutedEventArgs e)
+        => DwellSlider.Value = Math.Min(DwellSlider.Maximum, DwellSlider.Value + 0.1);
+
+    private void UpdateDwellLabel()
+    {
+        if (DwellTimeLabel != null)
+            DwellTimeLabel.Text = $"Verweilzeit: {DwellSlider.Value:0.0} s";
+    }
 }

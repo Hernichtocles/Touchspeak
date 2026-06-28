@@ -16,6 +16,27 @@ farbig hervorhebt.
   hervorgehoben. **Umschaltbar** zwischen Satz- und Abschnittsmodus.
 - **Import:** `.txt`, `.rtf`, `.docx`  •  **Export:** `.txt`, `.rtf`, `.docx`, `.pdf`
   (RTF behält die Formatierung vollständig; txt/docx/pdf sind textbasiert.)
+- **Kopfsteuerung (Verweil-Klick):** Bedienung per Kopfmaus (z. B. Orin
+  HeadMouse Nano). Verweilt der Cursor über einer Schaltfläche, füllt sich ein
+  Ring und löst nach Ablauf der einstellbaren Verweilzeit den Klick aus – ganz
+  ohne Taster oder Zusatzsoftware.
+
+## Steuerung per Kopfmaus (Orin HeadMouse Nano)
+Die HeadMouse Nano verhält sich gegenüber Windows wie eine normale USB-Maus und
+bewegt nur den Cursor. Für das **Klicken** bietet TouchSpeak einen eingebauten
+**Verweil-Klick**:
+
+1. Reiter **Vorlesen** → Bereich **Kopfsteuerung (Verweil-Klick)**.
+2. **Aktiviert** anhaken und mit **− / +** bzw. dem Schieberegler die
+   **Verweilzeit** (0,4–3,0 s) einstellen.
+3. Den Cursor per Kopf über eine Taste/Schaltfläche halten – der Ring füllt
+   sich, dann wird geklickt. Erst wenn der Cursor das Element verlässt, kann
+   erneut ausgelöst werden (kein versehentliches Mehrfachklicken).
+
+Der Verweil-Klick wirkt auf alle Schaltflächen der App (Tastatur, Vorschläge,
+Werkzeugleiste, Vorlese-Tasten, Auswahlfelder). Die Einstellung wird gespeichert.
+Alternativ funktioniert weiterhin ein **externer Taster** am HeadMouse-Eingang
+oder eine separate Dwell-Software.
 
 ## Voraussetzungen
 - **Windows 10** (Build 19041 / Version 2004 oder neuer) oder **Windows 11**

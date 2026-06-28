@@ -22,4 +22,10 @@ public sealed class AppSettings
     public bool UseFrequencyLayout { get; set; }     // false = QWERTZ
     public ReadingMode ReadingMode { get; set; } = ReadingMode.Sentence;
     public SpeakLanguage SpeakLanguage { get; set; } = SpeakLanguage.German;
+
+    // ----- Kopfsteuerung / Verweil-Klick (z. B. Orin HeadMouse Nano) -----
+    /// <summary>Verweil-Klick (Hover-to-Click) für die Steuerung per Kopfmaus.</summary>
+    public bool DwellEnabled { get; set; }
+    /// <summary>Verweilzeit in Sekunden, bis ein Klick ausgelöst wird (0.4 .. 3.0).</summary>
+    public double DwellSeconds { get; set; } = 1.2;
 }
