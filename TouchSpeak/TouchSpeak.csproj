@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <!-- Windows 10/11 TFM is required to use the modern WinRT speech voices -->
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <RootNamespace>TouchSpeak</RootNamespace>
+    <AssemblyName>TouchSpeak</AssemblyName>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- DOCX import/export without needing Word installed -->
+    <PackageReference Include="DocumentFormat.OpenXml" Version="3.1.0" />
+    <!-- PDF export (GDI build resolves system fonts automatically on Windows) -->
+    <PackageReference Include="PDFsharp-MigraDoc-gdi" Version="6.1.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Resources\de_words.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>

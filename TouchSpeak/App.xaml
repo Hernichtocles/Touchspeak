@@ -1,0 +1,15 @@
+<Application x:Class="TouchSpeak.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             StartupUri="MainWindow.xaml">
+    <Application.Resources>
+        <SolidColorBrush x:Key="AppBackground" Color="#FF1E2230"/>
+        <SolidColorBrush x:Key="PanelBackground" Color="#FF2A3042"/>
+        <SolidColorBrush x:Key="KeyBackground" Color="#FF3A415A"/>
+        <SolidColorBrush x:Key="KeySpecialBackground" Color="#FF4A5170"/>
+        <SolidColorBrush x:Key="AccentBackground" Color="#FF4C8BF5"/>
+        <SolidColorBrush x:Key="TextForeground" Color="#FFF2F4FA"/>
+        <SolidColorBrush x:Key="HighlightBackground" Color="#FFFFE08A"/>
+        <SolidColorBrush x:Key="HighlightForeground" Color="#FF1E2230"/>
+    </Application.Resources>
+</Application>
