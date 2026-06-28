@@ -30,6 +30,7 @@ public partial class MainWindow : Window
         Keyboard.SpacePressed += OnSpace;
         Keyboard.BackspacePressed += OnBackspace;
         Keyboard.EnterPressed += OnEnter;
+        Keyboard.PhraseInput += OnPhrase;
         Keyboard.LayoutChanged += _ => UpdateLayoutButton();
 
         _speech.Completed += (_, _) => Dispatcher.Invoke(() => { /* manual navigation */ });
@@ -141,6 +142,14 @@ public partial class MainWindow : Window
         Editor.Focus();
         EditingCommands.EnterParagraphBreak.Execute(null, Editor);
         RefreshSuggestions();
+    }
+
+    private void OnPhrase(string phrase)
+    {
+        if (string.IsNullOrWhiteSpace(phrase)) return;
+        InsertText(phrase + " ");
+        RefreshSuggestions();
+        SpeakText(phrase);
     }
 
     private void InsertText(string s)
@@ -311,9 +320,14 @@ public partial class MainWindow : Window
         SpeakCurrent();
     }
 
-    private async void SpeakCurrent()
+    private void SpeakCurrent()
     {
-        if (UnitsList.SelectedItem is not string text) return;
+        if (UnitsList.SelectedItem is string text) SpeakText(text);
+    }
+
+    private async void SpeakText(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return;
         var voiceId = LangEnglish.IsChecked == true
             ? EnglishVoiceBox.SelectedValue as string
             : GermanVoiceBox.SelectedValue as string;

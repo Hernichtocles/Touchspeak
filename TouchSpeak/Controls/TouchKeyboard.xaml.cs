@@ -14,6 +14,8 @@ public partial class TouchKeyboard : UserControl
     public event Action? SpacePressed;
     public event Action? BackspacePressed;
     public event Action? EnterPressed;
+    /// <summary>Fired for message tiles (e.g. "WC"); carries the message text.</summary>
+    public event Action<string>? PhraseInput;
 
     public TouchKeyboard()
     {
@@ -98,6 +100,12 @@ public partial class TouchKeyboard : UserControl
                 button.FontSize = 16;
                 button.Background = (Brush)Application.Current.Resources["KeySpecialBackground"];
                 button.Click += (_, _) => { _useFrequency = !_useFrequency; LayoutChanged?.Invoke(_useFrequency); Rebuild(); };
+                break;
+
+            case KeyType.Phrase:
+                button.Content = key.Label;
+                button.Background = (Brush)Application.Current.Resources["KeySpecialBackground"];
+                button.Click += (_, _) => PhraseInput?.Invoke(key.Lower);
                 break;
         }
         return button;

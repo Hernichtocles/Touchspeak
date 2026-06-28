@@ -7,7 +7,8 @@ public enum KeyType
     Backspace,
     Enter,
     Space,
-    SwitchLayout  // QWERTZ <-> frequency layout
+    SwitchLayout, // QWERTZ <-> frequency layout
+    Phrase        // inserts and speaks a fixed message (e.g. "WC")
 }
 
 public sealed class KeyDef
@@ -26,6 +27,11 @@ public sealed class KeyDef
 
     public static KeyDef Special(KeyType type, string label, double w = 1.0) =>
         new() { Type = type, Label = label, Width = w };
+
+    /// <summary>A tile that inserts and speaks a fixed message. <paramref name="text"/>
+    /// is the spoken/inserted message, <paramref name="label"/> the caption on the key.</summary>
+    public static KeyDef Phrase(string label, string text, double w = 1.0) =>
+        new() { Type = KeyType.Phrase, Label = label, Lower = text, Upper = text, Width = w };
 }
 
 /// <summary>
@@ -66,15 +72,20 @@ public static class KeyboardLayouts
 
     public static List<List<KeyDef>> Frequency()
     {
+        // 4x8 grid following the prescribed communication board.
+        // Top-left cell is the Shift key; bottom-right is the "WC" message tile.
         var rows = new List<List<KeyDef>>
         {
-            Letters("e", "n", "i", "s", "r", "a", "t"),
-            Letters("d", "h", "u", "l", "c", "g", "m"),
-            Letters("o", "b", "w", "f", "k", "z", "p"),
-            new() { KeyDef.Special(KeyType.Shift, "\u21e7", 1.6) }
+            new() { KeyDef.Special(KeyType.Shift, "\u21e7") },
+            new(),
+            new(),
+            new()
         };
-        rows[3].AddRange(Letters("v", "j", "y", "x", "q", "\u00e4", "\u00f6", "\u00fc"));
-        rows[3].Add(KeyDef.Letter("\u00df"));
+        rows[0].AddRange(Letters("e", "i", "t", "u", "b", "w", "\u00df"));
+        rows[1].AddRange(Letters("n", "r", "a", "g", "m", "k", "p", "q"));
+        rows[2].AddRange(Letters("s", "h", "l", "f", "z", "\u00fc", "j", "y"));
+        rows[3].AddRange(Letters("d", "c", "o", "v", "\u00e4", "\u00f6", "x"));
+        rows[3].Add(KeyDef.Phrase("WC", "Ich muss zur Toilette."));
         rows.Add(CommandRow());
         return rows;
     }
