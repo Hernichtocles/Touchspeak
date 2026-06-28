@@ -11,5 +11,10 @@
         <SolidColorBrush x:Key="TextForeground" Color="#FFF2F4FA"/>
         <SolidColorBrush x:Key="HighlightBackground" Color="#FFFFE08A"/>
         <SolidColorBrush x:Key="HighlightForeground" Color="#FF1E2230"/>
+
+        <!-- Kachel-Farben für die Vorlesen-Befehlsseite (blau = bearbeiten/navigieren, rot = sprechen) -->
+        <SolidColorBrush x:Key="TileBlue" Color="#FF2F6FB0"/>
+        <SolidColorBrush x:Key="TileRed" Color="#FFC0453F"/>
+        <SolidColorBrush x:Key="TileActive" Color="#FFFFC107"/>
     </Application.Resources>
 </Application>

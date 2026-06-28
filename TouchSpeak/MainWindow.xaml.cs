@@ -1,6 +1,8 @@
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
+using System.Windows.Input;
 using Microsoft.Win32;
 using TouchSpeak.Models;
 using TouchSpeak.Services;
@@ -15,8 +17,7 @@ public partial class MainWindow : Window
     private DwellClicker? _dwell;
 
     private bool _loaded;
-    private bool _suppressSpeak;
-    private bool _speakAfterRebuild;
+    private bool _selectMode;   // when true, navigation tiles extend the selection
 
     public MainWindow()
     {
@@ -72,9 +73,6 @@ public partial class MainWindow : Window
         Keyboard.UseFrequencyLayout = _settings.UseFrequencyLayout;
         UpdateLayoutButton();
 
-        if (_settings.ReadingMode == ReadingMode.Paragraph) ModeParagraph.IsChecked = true;
-        else ModeSentence.IsChecked = true;
-
         if (_settings.SpeakLanguage == SpeakLanguage.English) LangEnglish.IsChecked = true;
         else LangGerman.IsChecked = true;
 
@@ -93,7 +91,6 @@ public partial class MainWindow : Window
         _settings.SpeechRate = RateSlider.Value;
         _settings.SpeechVolume = VolumeSlider.Value;
         _settings.UseFrequencyLayout = Keyboard.UseFrequencyLayout;
-        _settings.ReadingMode = ModeParagraph.IsChecked == true ? ReadingMode.Paragraph : ReadingMode.Sentence;
         _settings.SpeakLanguage = LangEnglish.IsChecked == true ? SpeakLanguage.English : SpeakLanguage.German;
         _settings.GermanVoiceId = GermanVoiceBox.SelectedValue as string;
         _settings.EnglishVoiceId = EnglishVoiceBox.SelectedValue as string;
@@ -267,63 +264,107 @@ public partial class MainWindow : Window
 
     private void Speak_Click(object sender, RoutedEventArgs e)
     {
-        _speakAfterRebuild = true;
-        Tabs.SelectedIndex = 1; // switch to reading tab
+        Tabs.SelectedItem = ReadingTab; // switch to reading tab
     }
 
-    // ---------------- Reading tab ----------------
+    // ---------------- Reading tab: editor hosting ----------------
 
     private void Tabs_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (!_loaded) return;
         if (!ReferenceEquals(e.OriginalSource, Tabs)) return; // ignore inner controls
 
-        if (Tabs.SelectedIndex == 1)
+        if (ReferenceEquals(Tabs.SelectedItem, ReadingTab))
         {
-            RebuildUnits(_speakAfterRebuild);
-            _speakAfterRebuild = false;
+            MoveEditorTo(ReadingEditorHost);
         }
         else
         {
             _speech.Stop();
+            MoveEditorTo(WritingEditorHost);
         }
     }
 
-    private void RebuildUnits(bool speakFirst = false)
+    /// <summary>Re-parents the single editor between the writing and reading pages so the
+    /// real caret/selection stays available for navigation and speaking commands.</summary>
+    private void MoveEditorTo(Border host)
     {
-        var text = DocumentIoService.GetPlainText(Editor);
-        var mode = ModeParagraph.IsChecked == true ? ReadingMode.Paragraph : ReadingMode.Sentence;
-        var units = TextSegmenter.GetUnits(text, mode);
-
-        _suppressSpeak = true;
-        UnitsList.ItemsSource = units;
-        UnitsList.SelectedIndex = units.Count > 0 ? 0 : -1;
-        _suppressSpeak = false;
-
-        UpdateStatus();
-        if (speakFirst && units.Count > 0) SpeakCurrent();
+        if (ReferenceEquals(Editor.Parent, host)) return;
+        if (Editor.Parent is Border old) old.Child = null;
+        host.Child = Editor;
+        Editor.Focus();
     }
 
-    private void UpdateStatus()
+    // ---------------- Reading tab: edit & navigation tiles ----------------
+
+    private void Copy_Click(object sender, RoutedEventArgs e)
     {
-        int n = UnitsList.Items.Count;
-        int idx = UnitsList.SelectedIndex;
-        var label = ModeParagraph.IsChecked == true ? "Abschnitt" : "Satz";
-        StatusText.Text = $"{label} {(idx >= 0 ? idx + 1 : 0)} / {n}";
+        Editor.Focus();
+        ApplicationCommands.Copy.Execute(null, Editor);
     }
 
-    private void UnitsList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    private void Paste_Click(object sender, RoutedEventArgs e)
     {
-        UpdateStatus();
-        if (_suppressSpeak || UnitsList.SelectedItem == null) return;
-        UnitsList.ScrollIntoView(UnitsList.SelectedItem);
-        SpeakCurrent();
+        Editor.Focus();
+        ApplicationCommands.Paste.Execute(null, Editor);
     }
 
-    private void SpeakCurrent()
+    private void Undo_Click(object sender, RoutedEventArgs e)
     {
-        if (UnitsList.SelectedItem is string text) SpeakText(text);
+        Editor.Focus();
+        if (Editor.CanUndo) Editor.Undo();
     }
+
+    private void ToggleSelect_Click(object sender, RoutedEventArgs e)
+    {
+        _selectMode = !_selectMode;
+        SelectModeButton.Tag = _selectMode ? "on" : null;
+        Editor.Focus();
+    }
+
+    /// <summary>Runs the move command, or its selection-extending variant when select mode is on.</summary>
+    private void Nav(RoutedUICommand move, RoutedUICommand select)
+    {
+        Editor.Focus();
+        (_selectMode ? select : move).Execute(null, Editor);
+    }
+
+    private void Left_Click(object sender, RoutedEventArgs e)
+        => Nav(EditingCommands.MoveLeftByCharacter, EditingCommands.SelectLeftByCharacter);
+    private void Right_Click(object sender, RoutedEventArgs e)
+        => Nav(EditingCommands.MoveRightByCharacter, EditingCommands.SelectRightByCharacter);
+    private void Up_Click(object sender, RoutedEventArgs e)
+        => Nav(EditingCommands.MoveUpByLine, EditingCommands.SelectUpByLine);
+    private void Down_Click(object sender, RoutedEventArgs e)
+        => Nav(EditingCommands.MoveDownByLine, EditingCommands.SelectDownByLine);
+    private void PrevWord_Click(object sender, RoutedEventArgs e)
+        => Nav(EditingCommands.MoveLeftByWord, EditingCommands.SelectLeftByWord);
+    private void NextWord_Click(object sender, RoutedEventArgs e)
+        => Nav(EditingCommands.MoveRightByWord, EditingCommands.SelectRightByWord);
+    private void DocStart_Click(object sender, RoutedEventArgs e)
+        => Nav(EditingCommands.MoveToDocumentStart, EditingCommands.SelectToDocumentStart);
+    private void DocEnd_Click(object sender, RoutedEventArgs e)
+        => Nav(EditingCommands.MoveToDocumentEnd, EditingCommands.SelectToDocumentEnd);
+    private void LineStart_Click(object sender, RoutedEventArgs e)
+        => Nav(EditingCommands.MoveToLineStart, EditingCommands.SelectToLineStart);
+    private void LineEnd_Click(object sender, RoutedEventArgs e)
+        => Nav(EditingCommands.MoveToLineEnd, EditingCommands.SelectToLineEnd);
+
+    private void PrevSentence_Click(object sender, RoutedEventArgs e) => MoveSentence(-1);
+    private void NextSentence_Click(object sender, RoutedEventArgs e) => MoveSentence(1);
+
+    // ---------------- Reading tab: speaking tiles ----------------
+
+    private void SpeakParagraph_Click(object sender, RoutedEventArgs e)
+    {
+        var para = Editor.CaretPosition.Paragraph;
+        if (para != null) SpeakText(new TextRange(para.ContentStart, para.ContentEnd).Text);
+    }
+
+    private void SpeakSentence_Click(object sender, RoutedEventArgs e) => SpeakText(GetSentenceAtCaret());
+    private void SpeakWord_Click(object sender, RoutedEventArgs e) => SpeakText(GetWordAtCaret());
+    private void SpeakAll_Click(object sender, RoutedEventArgs e) => SpeakText(DocumentIoService.GetPlainText(Editor));
+    private void SpeakSelection_Click(object sender, RoutedEventArgs e) => SpeakText(Editor.Selection.Text);
 
     private async void SpeakText(string text)
     {
@@ -341,26 +382,122 @@ public partial class MainWindow : Window
         }
     }
 
-    private void Move(int delta)
-    {
-        int n = UnitsList.Items.Count;
-        if (n == 0) return;
-        int idx = Math.Clamp(UnitsList.SelectedIndex + delta, 0, n - 1);
-        UnitsList.SelectedIndex = idx; // SelectionChanged speaks + highlights
-    }
-
-    private void Next_Click(object sender, RoutedEventArgs e) => Move(1);
-    private void Prev_Click(object sender, RoutedEventArgs e) => Move(-1);
-
-    private void ReplaySpeak_Click(object sender, RoutedEventArgs e) => SpeakCurrent();
-    private void Pause_Click(object sender, RoutedEventArgs e) => _speech.Pause();
-    private void Resume_Click(object sender, RoutedEventArgs e) => _speech.Resume();
     private void StopSpeak_Click(object sender, RoutedEventArgs e) => _speech.Stop();
 
-    private void Mode_Changed(object sender, RoutedEventArgs e)
+    // ---------------- Reading tab: word / sentence extraction ----------------
+
+    private static bool IsSentenceEnd(char c) => c is '.' or '!' or '?' or '\n';
+
+    /// <summary>The word the caret currently sits in (or just after).</summary>
+    private string GetWordAtCaret()
     {
-        if (!_loaded) return;
-        if (Tabs.SelectedIndex == 1) RebuildUnits();
+        var (text, map) = BuildTextMap();
+        if (text.Length == 0) return "";
+        int off = Math.Clamp(CaretOffset(Editor.CaretPosition, map), 0, text.Length);
+
+        string Word(int o)
+        {
+            int s = o, e = o;
+            while (s > 0 && IsWordChar(text[s - 1])) s--;
+            while (e < text.Length && IsWordChar(text[e])) e++;
+            return text[s..e];
+        }
+
+        var w = Word(off);
+        if (w.Length == 0 && off > 0) w = Word(off - 1);
+        return w;
+    }
+
+    /// <summary>The sentence the caret currently sits in.</summary>
+    private string GetSentenceAtCaret()
+    {
+        var (text, map) = BuildTextMap();
+        if (text.Length == 0) return "";
+        int off = Math.Clamp(CaretOffset(Editor.CaretPosition, map), 0, Math.Max(0, text.Length - 1));
+
+        int s = off;
+        while (s > 0 && !IsSentenceEnd(text[s - 1])) s--;
+        while (s < text.Length && char.IsWhiteSpace(text[s])) s++;
+
+        int e = off;
+        while (e < text.Length && !IsSentenceEnd(text[e])) e++;
+        if (e < text.Length && text[e] != '\n') e++; // include the terminator (. ! ?)
+
+        return text[Math.Min(s, e)..e].Trim();
+    }
+
+    /// <summary>Moves the caret to the start of the previous/next sentence.</summary>
+    private void MoveSentence(int dir)
+    {
+        Editor.Focus();
+        var (text, map) = BuildTextMap();
+        if (text.Length == 0) return;
+
+        var starts = new List<int>();
+        bool atStart = true;
+        for (int i = 0; i < text.Length; i++)
+        {
+            if (atStart && !char.IsWhiteSpace(text[i])) { starts.Add(i); atStart = false; }
+            if (IsSentenceEnd(text[i])) atStart = true;
+        }
+        if (starts.Count == 0) return;
+
+        int off = Math.Clamp(CaretOffset(Editor.CaretPosition, map), 0, text.Length);
+        int cur = 0;
+        for (int i = 0; i < starts.Count; i++) if (starts[i] <= off) cur = i;
+
+        int target = dir < 0
+            ? (off > starts[cur] ? cur : cur - 1)   // first go to start of current sentence
+            : cur + 1;
+        target = Math.Clamp(target, 0, starts.Count - 1);
+
+        Editor.CaretPosition = map[Math.Clamp(starts[target], 0, map.Count - 1)];
+        Editor.Focus();
+    }
+
+    /// <summary>Builds the document's plain text together with a per-character TextPointer map.
+    /// <c>map[i]</c> is the position before character <c>i</c>; <c>map[Length]</c> is the end.</summary>
+    private (string text, List<TextPointer> map) BuildTextMap()
+    {
+        var sb = new StringBuilder();
+        var map = new List<TextPointer>();
+        TextPointer? p = Editor.Document.ContentStart;
+
+        while (p != null)
+        {
+            var ctx = p.GetPointerContext(LogicalDirection.Forward);
+            if (ctx == TextPointerContext.Text)
+            {
+                string run = p.GetTextInRun(LogicalDirection.Forward);
+                TextPointer rp = p;
+                foreach (char c in run)
+                {
+                    sb.Append(c);
+                    map.Add(rp);
+                    rp = rp.GetPositionAtOffset(1, LogicalDirection.Forward) ?? rp;
+                }
+                p = p.GetPositionAtOffset(run.Length, LogicalDirection.Forward);
+            }
+            else
+            {
+                if (ctx == TextPointerContext.ElementEnd && p.Parent is Paragraph)
+                {
+                    sb.Append('\n');
+                    map.Add(p);
+                }
+                p = p.GetNextContextPosition(LogicalDirection.Forward);
+            }
+        }
+
+        map.Add(Editor.Document.ContentEnd);
+        return (sb.ToString(), map);
+    }
+
+    private static int CaretOffset(TextPointer caret, List<TextPointer> map)
+    {
+        for (int i = 0; i < map.Count; i++)
+            if (map[i].CompareTo(caret) >= 0) return i;
+        return Math.Max(0, map.Count - 1);
     }
 
     private void Lang_Changed(object sender, RoutedEventArgs e) { /* used at speak time */ }

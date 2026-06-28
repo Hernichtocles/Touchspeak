@@ -12,8 +12,14 @@ farbig hervorhebt.
   **dazulernt**, was du häufig tippst (gespeichert pro Benutzer).
 - **Sprachausgabe** mit modernen Windows-Stimmen (Deutsch + Englisch),
   einstellbarer Geschwindigkeit und Lautstärke.
-- **Vorlesen** Satz für Satz mit **Weiter/Zurück**; der aktuelle Satz wird
-  hervorgehoben. **Umschaltbar** zwischen Satz- und Abschnittsmodus.
+- **Vorlesen-Seite als Befehlskacheln** (orientiert an gängiger AAC-Software):
+  Der Text steht oben, darunter große Kacheln zum **Bearbeiten/Navigieren**
+  (Kopieren, Einfügen, Rückgängig, Text auswählen, Cursor links/rechts/rauf/
+  runter, Wort/Satz/Zeilen-/Textanfang & -ende) und zum **Sprechen**
+  (Absatz, Satz, Wort, Alles, Auswahl, Beenden) – jeweils bezogen auf die
+  aktuelle Cursorposition bzw. Auswahl.
+- **Einstellungen-Seite** für Stimmen, Sprache, Geschwindigkeit, Lautstärke
+  und die Kopfsteuerung.
 - **Import:** `.txt`, `.rtf`, `.docx`  •  **Export:** `.txt`, `.rtf`, `.docx`, `.pdf`
   (RTF behält die Formatierung vollständig; txt/docx/pdf sind textbasiert.)
 - **Kopfsteuerung (Verweil-Klick):** Bedienung per Kopfmaus (z. B. Orin
@@ -26,7 +32,7 @@ Die HeadMouse Nano verhält sich gegenüber Windows wie eine normale USB-Maus un
 bewegt nur den Cursor. Für das **Klicken** bietet TouchSpeak einen eingebauten
 **Verweil-Klick**:
 
-1. Reiter **Vorlesen** → Bereich **Kopfsteuerung (Verweil-Klick)**.
+1. Reiter **Einstellungen** → Bereich **Kopfsteuerung (Verweil-Klick)**.
 2. **Aktiviert** anhaken und mit **− / +** bzw. dem Schieberegler die
    **Verweilzeit** (0,4–3,0 s) einstellen.
 3. Den Cursor per Kopf über eine Taste/Schaltfläche halten – der Ring füllt

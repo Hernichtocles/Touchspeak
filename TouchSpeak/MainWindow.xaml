@@ -45,6 +45,56 @@
             <Setter Property="MinWidth" Value="150"/>
             <Setter Property="FontSize" Value="20"/>
         </Style>
+
+        <!-- Befehlskachel (Symbol + Beschriftung) für die Vorlesen-Seite. -->
+        <Style x:Key="Tile" TargetType="Button">
+            <Setter Property="MinHeight" Value="92"/>
+            <Setter Property="Margin" Value="5"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Background" Value="{StaticResource TileBlue}"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" Background="{TemplateBinding Background}"
+                                CornerRadius="10" Padding="6">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Opacity" Value="0.82"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="bd" Property="Opacity" Value="0.7"/>
+                            </Trigger>
+                            <Trigger Property="Tag" Value="on">
+                                <Setter TargetName="bd" Property="Background" Value="{StaticResource TileActive}"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="bd" Property="Opacity" Value="0.4"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="TileRed" TargetType="Button" BasedOn="{StaticResource Tile}">
+            <Setter Property="Background" Value="{StaticResource TileRed}"/>
+        </Style>
+
+        <!-- Symbol- und Textzeilen innerhalb einer Kachel. -->
+        <Style x:Key="TileGlyph" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="26"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="0,0,0,4"/>
+        </Style>
+        <Style x:Key="TileLabel" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="TextAlignment" Value="Center"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+        </Style>
     </Window.Resources>
 
     <Grid>
@@ -71,7 +121,7 @@
                     <Button Style="{StaticResource ToolButton}" Click="Speak_Click" Content="&#x1F50A;  Zum Vorlesen"/>
                 </WrapPanel>
 
-                <Border Grid.Row="1" Background="{StaticResource PanelBackground}" CornerRadius="10" Padding="4">
+                <Border Grid.Row="1" x:Name="WritingEditorHost" Background="{StaticResource PanelBackground}" CornerRadius="10" Padding="4">
                     <RichTextBox x:Name="Editor" FontSize="22" Background="Transparent"
                                  Foreground="{StaticResource TextForeground}"
                                  BorderThickness="0" Padding="10"
@@ -94,86 +144,125 @@
         </TabItem>
 
         <!-- ===================== READING TAB ===================== -->
-        <TabItem Header="  Vorlesen  " FontSize="18">
+        <TabItem x:Name="ReadingTab" Header="  Vorlesen  " FontSize="18">
             <Grid Margin="6">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="320"/>
-                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
 
-                <Border Grid.Column="0" Background="{StaticResource PanelBackground}"
-                        CornerRadius="10" Padding="6" Margin="0,0,8,0">
-                    <ListBox x:Name="UnitsList" Background="Transparent" BorderThickness="0"
-                             Foreground="{StaticResource TextForeground}"
-                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                             SelectionChanged="UnitsList_SelectionChanged">
-                        <ListBox.ItemTemplate>
-                            <DataTemplate>
-                                <TextBlock Text="{Binding}" TextWrapping="Wrap"
-                                           FontSize="22" Padding="10" />
-                            </DataTemplate>
-                        </ListBox.ItemTemplate>
-                        <ListBox.ItemContainerStyle>
-                            <Style TargetType="ListBoxItem">
-                                <Setter Property="Margin" Value="2"/>
-                                <Setter Property="Template">
-                                    <Setter.Value>
-                                        <ControlTemplate TargetType="ListBoxItem">
-                                            <Border x:Name="bd" CornerRadius="8"
-                                                    Background="Transparent" Padding="2">
-                                                <ContentPresenter/>
-                                            </Border>
-                                            <ControlTemplate.Triggers>
-                                                <Trigger Property="IsSelected" Value="True">
-                                                    <Setter TargetName="bd" Property="Background"
-                                                            Value="{StaticResource HighlightBackground}"/>
-                                                    <Setter Property="TextElement.Foreground"
-                                                            Value="{StaticResource HighlightForeground}"/>
-                                                    <Setter Property="TextElement.FontWeight" Value="Bold"/>
-                                                </Trigger>
-                                                <Trigger Property="IsMouseOver" Value="True">
-                                                    <Setter TargetName="bd" Property="Background" Value="#33FFFFFF"/>
-                                                </Trigger>
-                                            </ControlTemplate.Triggers>
-                                        </ControlTemplate>
-                                    </Setter.Value>
-                                </Setter>
-                            </Style>
-                        </ListBox.ItemContainerStyle>
-                    </ListBox>
-                </Border>
+                <!-- Textbereich; der Editor wird hierher verschoben, sobald der Reiter aktiv ist. -->
+                <Border Grid.Row="0" x:Name="ReadingEditorHost"
+                        Background="{StaticResource PanelBackground}"
+                        CornerRadius="10" Padding="4" Margin="0,0,0,8"/>
 
-                <StackPanel Grid.Column="1">
-                    <TextBlock x:Name="StatusText" FontSize="18" Margin="4,2,4,8" Text="Satz 0 / 0"/>
+                <StackPanel Grid.Row="1">
+                    <!-- Bearbeiten & Navigieren (blau) -->
+                    <UniformGrid Columns="4">
+                        <Button Style="{StaticResource Tile}" Click="Copy_Click">
+                            <StackPanel><TextBlock Style="{StaticResource TileGlyph}" Text="&#x1F4CB;"/>
+                                <TextBlock Style="{StaticResource TileLabel}" Text="Kopieren"/></StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource Tile}" Click="Paste_Click">
+                            <StackPanel><TextBlock Style="{StaticResource TileGlyph}" Text="&#x1F4CC;"/>
+                                <TextBlock Style="{StaticResource TileLabel}" Text="Einfügen"/></StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource Tile}" Click="Undo_Click">
+                            <StackPanel><TextBlock Style="{StaticResource TileGlyph}" Text="&#x21B6;"/>
+                                <TextBlock Style="{StaticResource TileLabel}" Text="Löschen Rückgängig"/></StackPanel>
+                        </Button>
+                        <Button x:Name="SelectModeButton" Style="{StaticResource Tile}" Click="ToggleSelect_Click">
+                            <StackPanel><TextBlock Style="{StaticResource TileGlyph}" Text="&#x2750;"/>
+                                <TextBlock Style="{StaticResource TileLabel}" Text="Text Auswählen"/></StackPanel>
+                        </Button>
 
-                    <TextBlock Text="Modus" FontSize="14" Margin="4,4,4,2" Opacity="0.8"/>
-                    <StackPanel Orientation="Horizontal" Margin="4,0,4,8">
-                        <RadioButton x:Name="ModeSentence" Content="Satz" IsChecked="True"
-                                     FontSize="16" Margin="0,0,16,0" Foreground="{StaticResource TextForeground}"
-                                     Checked="Mode_Changed"/>
-                        <RadioButton x:Name="ModeParagraph" Content="Abschnitt"
-                                     FontSize="16" Foreground="{StaticResource TextForeground}"
-                                     Checked="Mode_Changed"/>
-                    </StackPanel>
+                        <Button Style="{StaticResource Tile}" Click="Left_Click">
+                            <StackPanel><TextBlock Style="{StaticResource TileGlyph}" Text="&#x2190;"/>
+                                <TextBlock Style="{StaticResource TileLabel}" Text="Links"/></StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource Tile}" Click="Right_Click">
+                            <StackPanel><TextBlock Style="{StaticResource TileGlyph}" Text="&#x2192;"/>
+                                <TextBlock Style="{StaticResource TileLabel}" Text="Rechts"/></StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource Tile}" Click="Up_Click">
+                            <StackPanel><TextBlock Style="{StaticResource TileGlyph}" Text="&#x2191;"/>
+                                <TextBlock Style="{StaticResource TileLabel}" Text="Rauf"/></StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource Tile}" Click="Down_Click">
+                            <StackPanel><TextBlock Style="{StaticResource TileGlyph}" Text="&#x2193;"/>
+                                <TextBlock Style="{StaticResource TileLabel}" Text="Runter"/></StackPanel>
+                        </Button>
 
-                    <Button Style="{StaticResource BigNavButton}" Click="Prev_Click"
-                            Content="&#x25C0;  Zurück" HorizontalAlignment="Stretch"/>
-                    <Button Style="{StaticResource BigNavButton}" Click="Next_Click"
-                            Content="Weiter  &#x25B6;" HorizontalAlignment="Stretch"/>
+                        <Button Style="{StaticResource Tile}" Click="PrevWord_Click">
+                            <StackPanel><TextBlock Style="{StaticResource TileGlyph}" Text="&#x23EA;"/>
+                                <TextBlock Style="{StaticResource TileLabel}" Text="Vorheriges Wort"/></StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource Tile}" Click="NextWord_Click">
+                            <StackPanel><TextBlock Style="{StaticResource TileGlyph}" Text="&#x23E9;"/>
+                                <TextBlock Style="{StaticResource TileLabel}" Text="Nächstes Wort"/></StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource Tile}" Click="DocStart_Click">
+                            <StackPanel><TextBlock Style="{StaticResource TileGlyph}" Text="&#x21E4;"/>
+                                <TextBlock Style="{StaticResource TileLabel}" Text="Textanfang"/></StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource Tile}" Click="DocEnd_Click">
+                            <StackPanel><TextBlock Style="{StaticResource TileGlyph}" Text="&#x21E5;"/>
+                                <TextBlock Style="{StaticResource TileLabel}" Text="Textende"/></StackPanel>
+                        </Button>
 
-                    <Separator Margin="4,10"/>
+                        <Button Style="{StaticResource Tile}" Click="PrevSentence_Click">
+                            <StackPanel><TextBlock Style="{StaticResource TileGlyph}" Text="&#x23EE;"/>
+                                <TextBlock Style="{StaticResource TileLabel}" Text="Vorheriger Satz"/></StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource Tile}" Click="NextSentence_Click">
+                            <StackPanel><TextBlock Style="{StaticResource TileGlyph}" Text="&#x23ED;"/>
+                                <TextBlock Style="{StaticResource TileLabel}" Text="Nächster Satz"/></StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource Tile}" Click="LineStart_Click">
+                            <StackPanel><TextBlock Style="{StaticResource TileGlyph}" Text="&#x21A4;"/>
+                                <TextBlock Style="{StaticResource TileLabel}" Text="Zeilenanfang"/></StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource Tile}" Click="LineEnd_Click">
+                            <StackPanel><TextBlock Style="{StaticResource TileGlyph}" Text="&#x21A6;"/>
+                                <TextBlock Style="{StaticResource TileLabel}" Text="Zeilenende"/></StackPanel>
+                        </Button>
+                    </UniformGrid>
 
-                    <Button Style="{StaticResource ToolButton}" Click="ReplaySpeak_Click"
-                            Content="&#x1F50A;  Erneut vorlesen" HorizontalAlignment="Stretch"/>
-                    <Button Style="{StaticResource ToolButton}" Click="Pause_Click"
-                            Content="&#x23F8;  Pause" HorizontalAlignment="Stretch"/>
-                    <Button Style="{StaticResource ToolButton}" Click="Resume_Click"
-                            Content="&#x25B6;  Fortsetzen" HorizontalAlignment="Stretch"/>
-                    <Button Style="{StaticResource ToolButton}" Click="StopSpeak_Click"
-                            Content="&#x23F9;  Stopp" HorizontalAlignment="Stretch"/>
+                    <!-- Sprechen (rot) -->
+                    <UniformGrid Columns="3" Margin="0,4,0,0">
+                        <Button Style="{StaticResource TileRed}" Click="SpeakParagraph_Click">
+                            <StackPanel><TextBlock Style="{StaticResource TileGlyph}" Text="&#x1F5E3;"/>
+                                <TextBlock Style="{StaticResource TileLabel}" Text="Absatz Sprechen"/></StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource TileRed}" Click="SpeakSentence_Click">
+                            <StackPanel><TextBlock Style="{StaticResource TileGlyph}" Text="&#x1F4AC;"/>
+                                <TextBlock Style="{StaticResource TileLabel}" Text="Satz Sprechen"/></StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource TileRed}" Click="SpeakWord_Click">
+                            <StackPanel><TextBlock Style="{StaticResource TileGlyph}" Text="&#x1F524;"/>
+                                <TextBlock Style="{StaticResource TileLabel}" Text="Wort Sprechen"/></StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource TileRed}" Click="SpeakAll_Click">
+                            <StackPanel><TextBlock Style="{StaticResource TileGlyph}" Text="&#x1F50A;"/>
+                                <TextBlock Style="{StaticResource TileLabel}" Text="Alles Sprechen"/></StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource TileRed}" Click="SpeakSelection_Click">
+                            <StackPanel><TextBlock Style="{StaticResource TileGlyph}" Text="&#x1F5EF;"/>
+                                <TextBlock Style="{StaticResource TileLabel}" Text="Auswahl Sprechen"/></StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource TileRed}" Click="StopSpeak_Click">
+                            <StackPanel><TextBlock Style="{StaticResource TileGlyph}" Text="&#x23F9;"/>
+                                <TextBlock Style="{StaticResource TileLabel}" Text="Sprechen Beenden"/></StackPanel>
+                        </Button>
+                    </UniformGrid>
+                </StackPanel>
+            </Grid>
+        </TabItem>
 
-                    <Separator Margin="4,10"/>
-
+        <!-- ===================== SETTINGS TAB ===================== -->
+        <TabItem Header="  Einstellungen  " FontSize="18">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel Margin="10" MaxWidth="520" HorizontalAlignment="Left">
                     <TextBlock Text="Sprache" FontSize="14" Margin="4,4,4,2" Opacity="0.8"/>
                     <StackPanel Orientation="Horizontal" Margin="4,0,4,8">
                         <RadioButton x:Name="LangGerman" Content="Deutsch" IsChecked="True"
@@ -219,7 +308,7 @@
                                 Content="&#x002B;" MinWidth="56" FontSize="22"/>
                     </StackPanel>
                 </StackPanel>
-            </Grid>
+            </ScrollViewer>
         </TabItem>
     </TabControl>
 
