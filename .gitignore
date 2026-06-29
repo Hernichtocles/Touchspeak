@@ -5,6 +5,10 @@ obj/
 *.suo
 .vs/
 
+# Veröffentlichte App (Build-Artefakt) – wird über GitHub Releases verteilt,
+# nicht im Repo versioniert (self-contained exe ist >100 MB).
+publish/
+
 # NuGet
 *.nupkg
 packages/
