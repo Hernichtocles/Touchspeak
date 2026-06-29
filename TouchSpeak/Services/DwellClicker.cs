@@ -75,6 +75,21 @@ public sealed class DwellClicker : IDisposable
 
     private void OnTick(object? sender, EventArgs e)
     {
+        // Der gesamte Tick ist gekapselt: Egal welche Schaltfläche der Verweil-Klick
+        // auslöst, eine dort entstehende Ausnahme darf weder den Timer beenden noch
+        // die App abstürzen lassen.
+        try
+        {
+            TickCore();
+        }
+        catch
+        {
+            Reset();
+        }
+    }
+
+    private void TickCore()
+    {
         if (!Enabled || !_window.IsActive)
         {
             Reset();
@@ -124,7 +139,14 @@ public sealed class DwellClicker : IDisposable
         {
             _firedForCurrentTarget = true;
             HideRing();
-            InvokeClick(_target);
+            // Klick erst nach dem aktuellen Tick auslösen, damit ein eventueller
+            // Fehler im Handler den Timer-Tick nicht beeinträchtigt.
+            var target = _target;
+            _window.Dispatcher.BeginInvoke(new Action(() =>
+            {
+                try { InvokeClick(target); }
+                catch { /* vom globalen Handler protokolliert */ }
+            }), DispatcherPriority.Input);
         }
     }
 
