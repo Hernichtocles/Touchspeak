@@ -69,6 +69,8 @@ public partial class MainWindow : Window
     {
         RateSlider.Value = _settings.SpeechRate;
         VolumeSlider.Value = _settings.SpeechVolume;
+        _speech.Rate = _settings.SpeechRate;
+        _speech.Volume = _settings.SpeechVolume;
 
         Keyboard.UseFrequencyLayout = _settings.UseFrequencyLayout;
         UpdateLayoutButton();
@@ -369,18 +371,19 @@ public partial class MainWindow : Window
     private async void SpeakText(string text)
     {
         if (string.IsNullOrWhiteSpace(text)) return;
-        var voiceId = LangEnglish.IsChecked == true
-            ? EnglishVoiceBox.SelectedValue as string
-            : GermanVoiceBox.SelectedValue as string;
         try
         {
-            await _speech.SpeakAsync(text, voiceId, RateSlider.Value, VolumeSlider.Value);
+            await _speech.SpeakAsync(text, SelectedVoiceId());
         }
         catch (Exception ex)
         {
             MessageBox.Show("Sprachausgabe nicht m\u00f6glich:\n" + ex.Message);
         }
     }
+
+    private string? SelectedVoiceId() => LangEnglish.IsChecked == true
+        ? EnglishVoiceBox.SelectedValue as string
+        : GermanVoiceBox.SelectedValue as string;
 
     private void StopSpeak_Click(object sender, RoutedEventArgs e) => _speech.Stop();
 
@@ -500,10 +503,22 @@ public partial class MainWindow : Window
         return Math.Max(0, map.Count - 1);
     }
 
-    private void Lang_Changed(object sender, RoutedEventArgs e) { /* used at speak time */ }
-    private void Voice_Changed(object sender, SelectionChangedEventArgs e) { /* persisted on close */ }
-    private void Rate_Changed(object sender, RoutedPropertyChangedEventArgs<double> e) { /* persisted on close */ }
-    private void Volume_Changed(object sender, RoutedPropertyChangedEventArgs<double> e) { /* persisted on close */ }
+    private async void Lang_Changed(object sender, RoutedEventArgs e) => await ApplyVoiceAsync();
+    private async void Voice_Changed(object sender, SelectionChangedEventArgs e) => await ApplyVoiceAsync();
+
+    /// <summary>Applies the selected voice immediately; a running utterance restarts with it.</summary>
+    private async Task ApplyVoiceAsync()
+    {
+        if (!_loaded) return;
+        try { await _speech.SetVoiceAsync(SelectedVoiceId()); }
+        catch { /* voice switch failed; next utterance will retry */ }
+    }
+
+    private void Rate_Changed(object sender, RoutedPropertyChangedEventArgs<double> e)
+        => _speech.Rate = e.NewValue;
+
+    private void Volume_Changed(object sender, RoutedPropertyChangedEventArgs<double> e)
+        => _speech.Volume = e.NewValue;
 
     // ---------------- Head control / dwell click ----------------
 
