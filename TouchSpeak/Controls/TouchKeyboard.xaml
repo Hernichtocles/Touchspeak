@@ -6,9 +6,9 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008">
     <UserControl.Resources>
         <Style x:Key="KeyButtonStyle" TargetType="Button">
-            <Setter Property="MinHeight" Value="58"/>
-            <Setter Property="Margin" Value="3"/>
-            <Setter Property="FontSize" Value="22"/>
+            <Setter Property="MinHeight" Value="88"/>
+            <Setter Property="Margin" Value="4"/>
+            <Setter Property="FontSize" Value="32"/>
             <Setter Property="Foreground" Value="{StaticResource TextForeground}"/>
             <Setter Property="Background" Value="{StaticResource KeyBackground}"/>
             <Setter Property="BorderThickness" Value="0"/>

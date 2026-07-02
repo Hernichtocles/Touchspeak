@@ -88,7 +88,7 @@ public partial class TouchKeyboard : UserControl
 
             case KeyType.Shift:
                 button.Content = key.Label;
-                button.FontSize = 26;
+                button.FontSize = 34;
                 button.Background = _shift
                     ? (Brush)Application.Current.Resources["AccentBackground"]
                     : (Brush)Application.Current.Resources["KeySpecialBackground"];
@@ -97,7 +97,7 @@ public partial class TouchKeyboard : UserControl
 
             case KeyType.SwitchLayout:
                 button.Content = key.Label;
-                button.FontSize = 16;
+                button.FontSize = 20;
                 button.Background = (Brush)Application.Current.Resources["KeySpecialBackground"];
                 button.Click += (_, _) => { _useFrequency = !_useFrequency; LayoutChanged?.Invoke(_useFrequency); Rebuild(); };
                 break;

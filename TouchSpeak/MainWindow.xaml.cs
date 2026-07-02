@@ -269,6 +269,16 @@ public partial class MainWindow : Window
         Tabs.SelectedItem = ReadingTab; // switch to reading tab
     }
 
+    private void Write_Click(object sender, RoutedEventArgs e)
+    {
+        Tabs.SelectedItem = WritingTab;
+    }
+
+    private void Settings_Click(object sender, RoutedEventArgs e)
+    {
+        Tabs.SelectedItem = SettingsTab;
+    }
+
     // ---------------- Reading tab: editor hosting ----------------
 
     private void Tabs_SelectionChanged(object sender, SelectionChangedEventArgs e)
