@@ -1,8 +1,10 @@
+using System.IO;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
+using System.Windows.Threading;
 using Microsoft.Win32;
 using TouchSpeak.Models;
 using TouchSpeak.Services;
@@ -18,6 +20,12 @@ public partial class MainWindow : Window
 
     private bool _loaded;
     private bool _selectMode;   // when true, navigation tiles extend the selection
+
+    // Absturz-Sicherung: der Text wird laufend als RTF in %AppData%\TouchSpeak gesichert
+    // und beim nächsten Start auf Nachfrage wiederhergestellt.
+    private readonly string _autosavePath = Path.Combine(SettingsService.AppFolder, "autosave.rtf");
+    private readonly string _autosaveTempPath = Path.Combine(SettingsService.AppFolder, "autosave.new.rtf");
+    private readonly DispatcherTimer _autosaveTimer = new() { Interval = TimeSpan.FromSeconds(2) };
 
     public MainWindow()
     {
@@ -38,6 +46,13 @@ public partial class MainWindow : Window
 
         PopulateVoices();
         ApplySettings();
+
+        // Zuerst einen ggf. vorhandenen Notfall-Text anbieten, dann erst die
+        // Autospeicherung scharf schalten, damit sie den alten Stand nicht überschreibt.
+        MaybeRestoreAutosave();
+
+        _autosaveTimer.Tick += (_, _) => { _autosaveTimer.Stop(); SaveAutosave(); };
+        Editor.TextChanged += (_, _) => { _autosaveTimer.Stop(); _autosaveTimer.Start(); };
 
         _loaded = true;
         RefreshSuggestions();
@@ -102,6 +117,8 @@ public partial class MainWindow : Window
 
     protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
     {
+        _autosaveTimer.Stop();
+        SaveAutosave();
         GatherSettings();
         SettingsService.Save(_settings);
         _predictor.SaveUserDictionary();
@@ -221,10 +238,64 @@ public partial class MainWindow : Window
 
     private void New_Click(object sender, RoutedEventArgs e)
     {
+        ClearEditor();
+        RefreshSuggestions();
+    }
+
+    private void ClearEditor()
+    {
         Editor.Document.Blocks.Clear();
         Editor.Document.Blocks.Add(new Paragraph(new Run(string.Empty)));
         Editor.CaretPosition = Editor.Document.ContentStart;
-        RefreshSuggestions();
+    }
+
+    // ---------------- Autospeicherung (Absturz-Sicherung) ----------------
+
+    /// <summary>Writes the current document to the autosave file. Best-effort; a temp file is
+    /// moved into place so a crash mid-write can never corrupt the last good copy.</summary>
+    private void SaveAutosave()
+    {
+        try
+        {
+            DocumentIoService.Save(Editor, _autosaveTempPath);
+            File.Move(_autosaveTempPath, _autosavePath, overwrite: true);
+        }
+        catch
+        {
+            // Autospeichern ist optional – Fehler dürfen den Betrieb nicht stören.
+        }
+    }
+
+    /// <summary>On startup, offers to restore the last autosaved text if one exists.</summary>
+    private void MaybeRestoreAutosave()
+    {
+        try
+        {
+            if (!File.Exists(_autosavePath)) return;
+
+            DocumentIoService.Load(Editor, _autosavePath);
+            if (string.IsNullOrWhiteSpace(DocumentIoService.GetPlainText(Editor)))
+            {
+                ClearEditor();
+                return;
+            }
+
+            var answer = MessageBox.Show(
+                "Es wurde ein nicht gespeicherter Text der letzten Sitzung gefunden.\n\n" +
+                "Möchten Sie ihn wiederherstellen?",
+                "Text wiederherstellen",
+                MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+            if (answer == MessageBoxResult.Yes)
+                Editor.CaretPosition = Editor.Document.ContentEnd;
+            else
+                ClearEditor();
+        }
+        catch
+        {
+            // Beschädigte Sicherung darf den Start nicht blockieren.
+            ClearEditor();
+        }
     }
 
     private void Open_Click(object sender, RoutedEventArgs e)
