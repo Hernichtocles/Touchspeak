@@ -123,9 +123,11 @@ public partial class MainWindow : Window
 
     private void OnSpace()
     {
+        var word = GetCurrentWord();
         LearnCurrentWord();
         InsertText(" ");
         RefreshSuggestions();
+        if (!string.IsNullOrWhiteSpace(word)) SpeakText(word);
     }
 
     private void OnBackspace()

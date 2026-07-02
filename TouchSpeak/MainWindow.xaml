@@ -134,6 +134,7 @@
                     <Button Style="{StaticResource ToolButton}" Click="ToggleLayout_Click"
                             x:Name="LayoutButton" Content="&#x2328;  Tastatur: QWERTZ"/>
                     <Button Style="{StaticResource ToolButton}" Click="Settings_Click" Content="&#x2699;  Einstellungen"/>
+                    <Button Style="{StaticResource ToolButton}" Click="SpeakAll_Click" Content="&#x1F509;  Alles Vorlesen"/>
                     <Button Style="{StaticResource BigNavButton}" Click="Speak_Click" Content="&#x1F50A;  Zum Vorlesen"/>
                 </WrapPanel>
 
