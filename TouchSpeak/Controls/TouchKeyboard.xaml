@@ -38,6 +38,8 @@
     </UserControl.Resources>
 
     <Border Background="{StaticResource PanelBackground}" CornerRadius="10" Padding="6">
-        <StackPanel x:Name="RowsHost"/>
+        <!-- UniformGrid statt StackPanel: die Reihen teilen sich die volle Höhe des
+             Steuerelements gleichmäßig, damit die Tasten mit dem Fenster mitwachsen. -->
+        <UniformGrid x:Name="RowsHost" Columns="1"/>
     </Border>
 </UserControl>
