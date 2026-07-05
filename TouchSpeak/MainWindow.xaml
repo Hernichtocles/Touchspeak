@@ -47,15 +47,17 @@
             <Setter Property="Background" Value="{StaticResource AccentBackground}"/>
         </Style>
 
-        <!-- Kopflose Tabs: der Wechsel läuft ausschließlich über die großen Buttons. -->
+        <!-- Kopflose Tabs: der Wechsel läuft ausschließlich über die großen Buttons.
+             Wichtig: Das Standard-Template des TabControls bleibt erhalten (ein eigenes
+             Template ohne TabPanel verhindert, dass die TabItems je erzeugt werden – das
+             Fenster bliebe komplett weiß). Es werden nur die Reiter-Köpfe ausgeblendet. -->
         <Style x:Key="HeaderlessTabControl" TargetType="TabControl">
-            <Setter Property="Template">
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="ItemContainerStyle">
                 <Setter.Value>
-                    <ControlTemplate TargetType="TabControl">
-                        <Border Background="{TemplateBinding Background}">
-                            <ContentPresenter ContentSource="SelectedContent"/>
-                        </Border>
-                    </ControlTemplate>
+                    <Style TargetType="TabItem">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                    </Style>
                 </Setter.Value>
             </Setter>
         </Style>

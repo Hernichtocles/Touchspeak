@@ -47,15 +47,31 @@ public partial class MainWindow : Window
         PopulateVoices();
         ApplySettings();
 
+        // Achtung: Die Autospeicherung (samt Wiederherstellungs-Nachfrage) wird erst in
+        // OnContentRendered scharf geschaltet – NICHT hier im Konstruktor. Eine MessageBox
+        // im Konstruktor blockiert den Aufbau, bevor das Fenster gezeichnet ist, und
+        // hinterlässt ein leeres weißes Fenster (v. a. auf Tablets sichtbar).
+
+        _loaded = true;
+        RefreshSuggestions();
+    }
+
+    private bool _autosaveReady;
+
+    /// <summary>Runs once the window has actually been painted: only then is it safe to show a
+    /// modal dialog (the restore prompt). Doing this in the constructor blanks the window.</summary>
+    protected override void OnContentRendered(EventArgs e)
+    {
+        base.OnContentRendered(e);
+        if (_autosaveReady) return;
+        _autosaveReady = true;
+
         // Zuerst einen ggf. vorhandenen Notfall-Text anbieten, dann erst die
         // Autospeicherung scharf schalten, damit sie den alten Stand nicht überschreibt.
         MaybeRestoreAutosave();
 
         _autosaveTimer.Tick += (_, _) => { _autosaveTimer.Stop(); SaveAutosave(); };
         Editor.TextChanged += (_, _) => { _autosaveTimer.Stop(); _autosaveTimer.Start(); };
-
-        _loaded = true;
-        RefreshSuggestions();
     }
 
     // ---------------- Settings / voices ----------------
@@ -280,7 +296,7 @@ public partial class MainWindow : Window
                 return;
             }
 
-            var answer = MessageBox.Show(
+            var answer = MessageBox.Show(this,
                 "Es wurde ein nicht gespeicherter Text der letzten Sitzung gefunden.\n\n" +
                 "Möchten Sie ihn wiederherstellen?",
                 "Text wiederherstellen",
