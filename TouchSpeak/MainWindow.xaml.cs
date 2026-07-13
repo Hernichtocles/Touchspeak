@@ -248,6 +248,7 @@ public partial class MainWindow : Window
         InsertText(word + " ");
         _predictor.Learn(word);
         RefreshSuggestions();
+        SpeakText(word);
     }
 
     // ---------------- File toolbar ----------------
