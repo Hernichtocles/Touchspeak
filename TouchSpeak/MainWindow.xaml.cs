@@ -254,8 +254,85 @@ public partial class MainWindow : Window
 
     private void New_Click(object sender, RoutedEventArgs e)
     {
-        ClearEditor();
-        RefreshSuggestions();
+        // Nichts zu verlieren? Dann ohne Nachfrage leeren.
+        if (string.IsNullOrWhiteSpace(DocumentIoService.GetPlainText(Editor)))
+        {
+            ClearEditor();
+            RefreshSuggestions();
+            return;
+        }
+        ShowConfirmNew();
+    }
+
+    // ---------------- Sicherheitsabfrage für „Neu" ----------------
+
+    // Löschen erfordert 10 Sekunden ununterbrochenes Verweilen auf der roten Fläche –
+    // deutlich länger als der Verweil-Klick (1,2 s), damit ein versehentlicher
+    // Treffer mit der Kopfsteuerung nicht sofort den ganzen Text vernichtet.
+    private const double ConfirmHoldSeconds = 10.0;
+    private readonly DispatcherTimer _confirmHoldTimer = new() { Interval = TimeSpan.FromMilliseconds(50) };
+    private long _confirmHoldStartTicks;
+    private bool _confirmHoldWired;
+
+    private void ShowConfirmNew()
+    {
+        if (!_confirmHoldWired)
+        {
+            _confirmHoldWired = true;
+            _confirmHoldTimer.Tick += ConfirmHold_Tick;
+        }
+        ResetConfirmHold();
+        ConfirmNewOverlay.Visibility = Visibility.Visible;
+    }
+
+    private void HideConfirmNew()
+    {
+        ResetConfirmHold();
+        ConfirmNewOverlay.Visibility = Visibility.Collapsed;
+    }
+
+    private void ResetConfirmHold()
+    {
+        _confirmHoldTimer.Stop();
+        ConfirmNewProgress.Value = 0;
+        ConfirmNewHoldLabel.Text = $"Ja, alles löschen – {ConfirmHoldSeconds:0} Sekunden hier bleiben";
+    }
+
+    private void ConfirmNewCancel_Click(object sender, RoutedEventArgs e) => HideConfirmNew();
+
+    private void ConfirmNewHold_MouseEnter(object sender, MouseEventArgs e)
+    {
+        _confirmHoldStartTicks = System.Diagnostics.Stopwatch.GetTimestamp();
+        _confirmHoldTimer.Start();
+    }
+
+    private void ConfirmNewHold_MouseLeave(object sender, MouseEventArgs e) => ResetConfirmHold();
+
+    private void ConfirmHold_Tick(object? sender, EventArgs e)
+    {
+        double elapsed = (System.Diagnostics.Stopwatch.GetTimestamp() - _confirmHoldStartTicks)
+                         / (double)System.Diagnostics.Stopwatch.Frequency;
+
+        // Sicherheitsnetz: falls MouseLeave verloren ging (z. B. Fensterwechsel),
+        // zählt nur echtes Verweilen auf der Fläche.
+        if (!ConfirmNewHold.IsMouseOver)
+        {
+            ResetConfirmHold();
+            return;
+        }
+
+        double remaining = Math.Max(0, ConfirmHoldSeconds - elapsed);
+        ConfirmNewProgress.Value = Math.Min(100, elapsed / ConfirmHoldSeconds * 100);
+        ConfirmNewHoldLabel.Text = remaining > 0
+            ? $"Löschen in {remaining:0.0} Sekunden – dranbleiben"
+            : "Wird gelöscht …";
+
+        if (elapsed >= ConfirmHoldSeconds)
+        {
+            HideConfirmNew();
+            ClearEditor();
+            RefreshSuggestions();
+        }
     }
 
     private void ClearEditor()
@@ -290,6 +367,10 @@ public partial class MainWindow : Window
             if (!File.Exists(_autosavePath)) return;
 
             DocumentIoService.Load(Editor, _autosavePath);
+            // Autosaves aus älteren Versionen tragen die damalige Schriftgröße im RTF;
+            // auf die aktuelle Editor-Größe vereinheitlichen.
+            new TextRange(Editor.Document.ContentStart, Editor.Document.ContentEnd)
+                .ApplyPropertyValue(TextElement.FontSizeProperty, Editor.FontSize);
             if (string.IsNullOrWhiteSpace(DocumentIoService.GetPlainText(Editor)))
             {
                 ClearEditor();

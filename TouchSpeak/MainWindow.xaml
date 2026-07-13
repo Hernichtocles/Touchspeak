@@ -142,7 +142,7 @@
                 </WrapPanel>
 
                 <Border Grid.Row="1" x:Name="WritingEditorHost" Background="{StaticResource PanelBackground}" CornerRadius="10" Padding="4">
-                    <RichTextBox x:Name="Editor" FontSize="28" Background="Transparent"
+                    <RichTextBox x:Name="Editor" FontSize="36" Background="Transparent"
                                  Foreground="{StaticResource TextForeground}"
                                  BorderThickness="0" Padding="10"
                                  SpellCheck.IsEnabled="False"
@@ -349,6 +349,44 @@
             </Grid>
         </TabItem>
     </TabControl>
+
+        <!-- Sicherheitsabfrage für „Neu": liegt über der gesamten Oberfläche.
+             Die rote Fläche ist bewusst KEIN Button, damit der Verweil-Klick der
+             Kopfsteuerung (1,2 s) sie nicht auslösen kann. Gelöscht wird erst,
+             wenn der Zeiger 10 Sekunden ununterbrochen darauf bleibt. -->
+        <Grid x:Name="ConfirmNewOverlay" Visibility="Collapsed" Background="#CC101010">
+            <Border Background="{StaticResource PanelBackground}" CornerRadius="14"
+                    Padding="36" MaxWidth="760"
+                    HorizontalAlignment="Center" VerticalAlignment="Center">
+                <StackPanel>
+                    <TextBlock Text="&#x26A0; Wirklich alles löschen?" FontSize="36" FontWeight="Bold"
+                               TextAlignment="Center"/>
+                    <TextBlock Text="Der geschriebene Text geht dabei verloren."
+                               FontSize="24" Opacity="0.85" TextAlignment="Center" TextWrapping="Wrap"
+                               Margin="0,10,0,28"/>
+
+                    <!-- Farbe direkt statt {StaticResource TileRed}: dieser Schlüssel ist im
+                         Fenster doppelt belegt (Brush in App.xaml, Button-Style hier) und
+                         würde als Style aufgelöst -> Absturz beim Start. -->
+                    <Border x:Name="ConfirmNewHold" Background="#FFC0453F" CornerRadius="10"
+                            MinHeight="130" Cursor="Hand"
+                            MouseEnter="ConfirmNewHold_MouseEnter" MouseLeave="ConfirmNewHold_MouseLeave">
+                        <StackPanel VerticalAlignment="Center" Margin="24,16">
+                            <TextBlock x:Name="ConfirmNewHoldLabel"
+                                       Text="Ja, alles löschen &#x2013; 10 Sekunden hier bleiben"
+                                       FontSize="24" FontWeight="SemiBold" Foreground="White"
+                                       TextAlignment="Center" TextWrapping="Wrap"/>
+                            <ProgressBar x:Name="ConfirmNewProgress" Height="16" Maximum="100"
+                                         Margin="8,14,8,0"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Button Style="{StaticResource BigNavButton}" MinHeight="96" FontSize="28"
+                            Margin="0,24,0,0" Click="ConfirmNewCancel_Click"
+                            Content="&#x2715;  Abbrechen &#x2013; Text behalten"/>
+                </StackPanel>
+            </Border>
+        </Grid>
 
         <!-- Overlay für den Verweil-Klick-Fortschrittsring (Kopfsteuerung).
              Liegt über allem und lässt Maus-/Kopfmaus-Eingaben durch. -->
