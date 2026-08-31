@@ -42,6 +42,11 @@ public partial class MainWindow : Window
         Keyboard.PhraseInput += OnPhrase;
         Keyboard.LayoutChanged += _ => UpdateLayoutButton();
 
+        // Leerzeichen einer physischen Tastatur laufen an der Bildschirmtastatur
+        // vorbei direkt in die RichTextBox; hier abfangen, damit das fertige Wort
+        // genauso vorgelesen wird wie bei der Bildschirm-Leertaste.
+        Editor.PreviewKeyDown += Editor_PreviewKeyDown;
+
         _speech.Completed += (_, _) => Dispatcher.Invoke(() => { /* manual navigation */ });
 
         _errorBannerTimer.Tick += (_, _) =>
@@ -167,6 +172,18 @@ public partial class MainWindow : Window
         InsertText(" ");
         RefreshSuggestions();
         if (!string.IsNullOrWhiteSpace(word)) SpeakText(word);
+    }
+
+    // Die Leertaste löst in WPF kein TextInput aus, deshalb über PreviewKeyDown.
+    // Das Wort muss hier erfasst werden, solange das Leerzeichen noch nicht
+    // eingefügt ist; die RichTextBox fügt es danach selbst ein.
+    private void Editor_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.Space) return;
+        var word = GetCurrentWord();
+        LearnCurrentWord();
+        if (!string.IsNullOrWhiteSpace(word)) SpeakText(word);
+        Dispatcher.BeginInvoke(RefreshSuggestions, DispatcherPriority.Background);
     }
 
     private void OnBackspace()
