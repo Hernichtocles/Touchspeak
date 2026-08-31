@@ -386,6 +386,74 @@ public partial class MainWindow : Window
         }
     }
 
+    // ---------------- Sicherheitsabfrage für „Beenden" ----------------
+
+    // Beenden ist weniger folgenschwer als Löschen (Autospeicherung bewahrt den Text),
+    // aber per Kopfsteuerung kaum rückgängig zu machen, weil die App im rahmenlosen
+    // Vollbild der einzige Weg zurück ist – deshalb Halten statt Klicken, mit 5 Sekunden.
+    private const double ExitHoldSeconds = 5.0;
+    private readonly DispatcherTimer _exitHoldTimer = new() { Interval = TimeSpan.FromMilliseconds(50) };
+    private long _exitHoldStartTicks;
+    private bool _exitHoldWired;
+
+    private void Quit_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_exitHoldWired)
+        {
+            _exitHoldWired = true;
+            _exitHoldTimer.Tick += ExitHold_Tick;
+        }
+        ResetExitHold();
+        ConfirmExitOverlay.Visibility = Visibility.Visible;
+    }
+
+    private void HideConfirmExit()
+    {
+        ResetExitHold();
+        ConfirmExitOverlay.Visibility = Visibility.Collapsed;
+    }
+
+    private void ResetExitHold()
+    {
+        _exitHoldTimer.Stop();
+        ConfirmExitProgress.Value = 0;
+        ConfirmExitHoldLabel.Text = $"Ja, beenden – {ExitHoldSeconds:0} Sekunden hier bleiben";
+    }
+
+    private void ConfirmExitCancel_Click(object sender, RoutedEventArgs e) => HideConfirmExit();
+
+    private void ConfirmExitHold_MouseEnter(object sender, MouseEventArgs e)
+    {
+        _exitHoldStartTicks = System.Diagnostics.Stopwatch.GetTimestamp();
+        _exitHoldTimer.Start();
+    }
+
+    private void ConfirmExitHold_MouseLeave(object sender, MouseEventArgs e) => ResetExitHold();
+
+    private void ExitHold_Tick(object? sender, EventArgs e)
+    {
+        double elapsed = (System.Diagnostics.Stopwatch.GetTimestamp() - _exitHoldStartTicks)
+                         / (double)System.Diagnostics.Stopwatch.Frequency;
+
+        if (!ConfirmExitHold.IsMouseOver)
+        {
+            ResetExitHold();
+            return;
+        }
+
+        double remaining = Math.Max(0, ExitHoldSeconds - elapsed);
+        ConfirmExitProgress.Value = Math.Min(100, elapsed / ExitHoldSeconds * 100);
+        ConfirmExitHoldLabel.Text = remaining > 0
+            ? $"Beenden in {remaining:0.0} Sekunden – dranbleiben"
+            : "Wird beendet …";
+
+        if (elapsed >= ExitHoldSeconds)
+        {
+            _exitHoldTimer.Stop();
+            Close(); // OnClosing sichert Text, Einstellungen und Wörterbuch
+        }
+    }
+
     private void ClearEditor()
     {
         Editor.Document.Blocks.Clear();
