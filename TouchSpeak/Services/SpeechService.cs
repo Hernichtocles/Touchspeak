@@ -16,13 +16,17 @@ public sealed record VoiceInfo(string Id, string DisplayName, string Language);
 /// </summary>
 public sealed class SpeechService : IDisposable
 {
-    private readonly SpeechSynthesizer _synth = new();
     private MediaPlayer? _player;
     private string? _currentText;
     private string? _voiceId;
     private double _rate = 1.0;
     private double _volume = 1.0;
     private bool _speaking;
+
+    // Laufende Nummer des aktuellen Sprechauftrags. Die Synthese ist asynchron; kommt
+    // währenddessen ein neuer Auftrag oder ein Stop, darf das alte Ergebnis keinen
+    // Player mehr starten – sonst spielen zwei Ausgaben gleichzeitig übereinander.
+    private int _session;
 
     /// <summary>Raised (on a background thread) when the current utterance finishes.</summary>
     public event EventHandler? Completed;
@@ -93,13 +97,21 @@ public sealed class SpeechService : IDisposable
 
     private async Task StartPlaybackAsync()
     {
+        int session = ++_session;
+        var text = _currentText;
+        if (string.IsNullOrEmpty(text)) return;
+
+        // Eigener Synthesizer pro Auftrag: kein geteilter Voice-Zustand zwischen
+        // parallel angestoßenen Aufträgen.
+        using var synth = new SpeechSynthesizer();
         if (!string.IsNullOrEmpty(_voiceId))
         {
             var voice = SpeechSynthesizer.AllVoices.FirstOrDefault(v => v.Id == _voiceId);
-            if (voice != null) _synth.Voice = voice;
+            if (voice != null) synth.Voice = voice;
         }
 
-        var stream = await _synth.SynthesizeTextToStreamAsync(_currentText);
+        var stream = await synth.SynthesizeTextToStreamAsync(text);
+        if (session != _session) return; // überholt durch neueren Auftrag oder Stop
 
         _player = new MediaPlayer { AutoPlay = false, Volume = _volume };
         _player.MediaOpened += OnMediaOpened;
@@ -115,6 +127,7 @@ public sealed class SpeechService : IDisposable
 
     public void Stop()
     {
+        _session++; // entwertet eine gerade noch laufende Synthese
         _speaking = false;
         _currentText = null;
         if (_player != null)
@@ -140,9 +153,5 @@ public sealed class SpeechService : IDisposable
         Completed?.Invoke(this, EventArgs.Empty);
     }
 
-    public void Dispose()
-    {
-        Stop();
-        _synth.Dispose();
-    }
+    public void Dispose() => Stop();
 }

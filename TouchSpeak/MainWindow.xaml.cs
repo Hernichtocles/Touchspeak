@@ -44,13 +44,19 @@ public partial class MainWindow : Window
 
         _speech.Completed += (_, _) => Dispatcher.Invoke(() => { /* manual navigation */ });
 
+        _errorBannerTimer.Tick += (_, _) =>
+        {
+            _errorBannerTimer.Stop();
+            ErrorBanner.Visibility = Visibility.Collapsed;
+        };
+
         PopulateVoices();
         ApplySettings();
 
-        // Achtung: Die Autospeicherung (samt Wiederherstellungs-Nachfrage) wird erst in
-        // OnContentRendered scharf geschaltet – NICHT hier im Konstruktor. Eine MessageBox
-        // im Konstruktor blockiert den Aufbau, bevor das Fenster gezeichnet ist, und
-        // hinterlässt ein leeres weißes Fenster (v. a. auf Tablets sichtbar).
+        // Achtung: Die Autospeicherung (samt Wiederherstellungs-Abfrage) wird erst in
+        // OnContentRendered scharf geschaltet – NICHT hier im Konstruktor, damit das
+        // Fenster zuerst vollständig gezeichnet wird (sonst droht ein leeres weißes
+        // Fenster, v. a. auf Tablets sichtbar).
 
         _loaded = true;
         RefreshSuggestions();
@@ -208,12 +214,39 @@ public partial class MainWindow : Window
         Editor.CaretPosition = start;
     }
 
+    /// <summary>Das Wort unmittelbar vor der Einfügemarke – auch wenn es sich über
+    /// mehrere Text-Runs erstreckt (z. B. nach Einfügen oder Wiederherstellen
+    /// unterschiedlich formatierter Teile). Sonst würde ein angenommener Vorschlag
+    /// zu wenige Zeichen ersetzen und Buchstabenreste stehen lassen.</summary>
     private string GetCurrentWord()
     {
-        var before = Editor.CaretPosition.GetTextInRun(LogicalDirection.Backward) ?? "";
-        int i = before.Length;
-        while (i > 0 && IsWordChar(before[i - 1])) i--;
-        return before[i..];
+        var sb = new StringBuilder();
+        TextPointer? p = Editor.CaretPosition;
+        while (p != null)
+        {
+            var chunk = p.GetTextInRun(LogicalDirection.Backward);
+            if (chunk.Length > 0)
+            {
+                int i = chunk.Length;
+                while (i > 0 && IsWordChar(chunk[i - 1])) i--;
+                sb.Insert(0, chunk[i..]);
+                if (i > 0) break; // Wortgrenze innerhalb des Runs gefunden
+                p = p.GetPositionAtOffset(-chunk.Length);
+                continue;
+            }
+
+            // Kein Text direkt davor: reine Formatierungsgrenzen (Run/Span) überspringen;
+            // Absatzanfang oder LineBreak beenden das Wort.
+            var ctx = p.GetPointerContext(LogicalDirection.Backward);
+            if (ctx == TextPointerContext.ElementStart && p.Parent is Run or Span)
+                p = p.GetNextContextPosition(LogicalDirection.Backward);
+            else if (ctx == TextPointerContext.ElementEnd &&
+                     p.GetAdjacentElement(LogicalDirection.Backward) is Run or Span)
+                p = p.GetNextContextPosition(LogicalDirection.Backward);
+            else
+                break;
+        }
+        return sb.ToString();
     }
 
     private void LearnCurrentWord()
@@ -360,7 +393,9 @@ public partial class MainWindow : Window
         }
     }
 
-    /// <summary>On startup, offers to restore the last autosaved text if one exists.</summary>
+    /// <summary>On startup, offers to restore the last autosaved text if one exists.
+    /// Die Abfrage läuft als Overlay statt als MessageBox: native Dialoge sind per
+    /// Verweil-Klick (Kopfsteuerung) nicht bedienbar.</summary>
     private void MaybeRestoreAutosave()
     {
         try
@@ -378,16 +413,7 @@ public partial class MainWindow : Window
                 return;
             }
 
-            var answer = MessageBox.Show(this,
-                "Es wurde ein nicht gespeicherter Text der letzten Sitzung gefunden.\n\n" +
-                "Möchten Sie ihn wiederherstellen?",
-                "Text wiederherstellen",
-                MessageBoxButton.YesNo, MessageBoxImage.Question);
-
-            if (answer == MessageBoxResult.Yes)
-                Editor.CaretPosition = Editor.Document.ContentEnd;
-            else
-                ClearEditor();
+            RestoreOverlay.Visibility = Visibility.Visible;
         }
         catch
         {
@@ -396,13 +422,37 @@ public partial class MainWindow : Window
         }
     }
 
+    private void RestoreYes_Click(object sender, RoutedEventArgs e)
+    {
+        RestoreOverlay.Visibility = Visibility.Collapsed;
+        Editor.CaretPosition = Editor.Document.ContentEnd;
+        Editor.Focus();
+        RefreshSuggestions();
+    }
+
+    private void RestoreNo_Click(object sender, RoutedEventArgs e)
+    {
+        RestoreOverlay.Visibility = Visibility.Collapsed;
+        // Nicht endgültig löschen: die abgelehnte Sicherung bleibt als
+        // autosave.verworfen.rtf erhalten, falls sie doch noch gebraucht wird.
+        try
+        {
+            File.Move(_autosavePath,
+                Path.Combine(SettingsService.AppFolder, "autosave.verworfen.rtf"),
+                overwrite: true);
+        }
+        catch { /* best-effort */ }
+        ClearEditor();
+        RefreshSuggestions();
+    }
+
     private void Open_Click(object sender, RoutedEventArgs e)
     {
         var dlg = new OpenFileDialog { Filter = DocumentIoService.ImportFilter };
         if (dlg.ShowDialog() == true)
         {
             try { DocumentIoService.Load(Editor, dlg.FileName); }
-            catch (Exception ex) { MessageBox.Show("Datei konnte nicht geladen werden:\n" + ex.Message); }
+            catch (Exception ex) { ShowError("Datei konnte nicht geladen werden:\n" + ex.Message); }
             RefreshSuggestions();
         }
     }
@@ -418,7 +468,7 @@ public partial class MainWindow : Window
         if (dlg.ShowDialog() == true)
         {
             try { DocumentIoService.Save(Editor, dlg.FileName); }
-            catch (Exception ex) { MessageBox.Show("Datei konnte nicht gespeichert werden:\n" + ex.Message); }
+            catch (Exception ex) { ShowError("Datei konnte nicht gespeichert werden:\n" + ex.Message); }
         }
     }
 
@@ -558,7 +608,7 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-            MessageBox.Show("Sprachausgabe nicht m\u00f6glich:\n" + ex.Message);
+            ShowError("Sprachausgabe nicht m\u00f6glich:\n" + ex.Message);
         }
     }
 
@@ -567,6 +617,28 @@ public partial class MainWindow : Window
         : GermanVoiceBox.SelectedValue as string;
 
     private void StopSpeak_Click(object sender, RoutedEventArgs e) => _speech.Stop();
+
+    // ---------------- Fehler-Banner ----------------
+
+    // Fehlermeldungen laufen über ein Banner im Fenster statt über MessageBoxen:
+    // native Dialoge kann der Verweil-Klick nicht bedienen, und sie deaktivieren
+    // das Fenster, wodurch die Kopfsteuerung komplett pausiert.
+    private readonly DispatcherTimer _errorBannerTimer = new() { Interval = TimeSpan.FromSeconds(8) };
+
+    /// <summary>Zeigt eine Fehlermeldung als Banner; schließt sich nach 8 s von selbst.</summary>
+    public void ShowError(string message)
+    {
+        ErrorBannerText.Text = message;
+        ErrorBanner.Visibility = Visibility.Visible;
+        _errorBannerTimer.Stop();
+        _errorBannerTimer.Start();
+    }
+
+    private void ErrorBanner_Close(object sender, RoutedEventArgs e)
+    {
+        _errorBannerTimer.Stop();
+        ErrorBanner.Visibility = Visibility.Collapsed;
+    }
 
     // ---------------- Reading tab: word / sentence extraction ----------------
 

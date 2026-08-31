@@ -33,6 +33,13 @@ public sealed class DwellClicker : IDisposable
     private long _dwellStartTicks;
     private bool _firedForCurrentTarget;
 
+    // Bildschirmbereich (physische Pixel) der zuletzt geklickten Taste. Solange der
+    // Cursor darin bleibt, wird nicht erneut ausgelöst – auch dann nicht, wenn die
+    // Tastatur ihre Buttons neu aufgebaut hat (Shift-/Layout-Wechsel) und unter dem
+    // Cursor deshalb eine NEUE Button-Instanz liegt. Ohne diese Sperre würde z. B.
+    // Verweilen auf der Shift-Taste sie alle 1,2 s endlos hin- und herschalten.
+    private Rect? _firedScreenRect;
+
     public bool Enabled { get; set; }
     public double DwellSeconds { get; set; } = 1.2;
 
@@ -103,6 +110,20 @@ public sealed class DwellClicker : IDisposable
         }
 
         var screen = new Point(pt.X, pt.Y);
+
+        // Nach einem Klick bleibt der Bereich der Taste gesperrt, bis der Cursor ihn
+        // einmal verlassen hat.
+        if (_firedScreenRect is Rect locked)
+        {
+            if (locked.Contains(screen))
+            {
+                _target = null;
+                HideRing();
+                return;
+            }
+            _firedScreenRect = null;
+        }
+
         Point inWindow, inOverlay;
         try
         {
@@ -138,6 +159,7 @@ public sealed class DwellClicker : IDisposable
         if (frac >= 1.0)
         {
             _firedForCurrentTarget = true;
+            _firedScreenRect = GetScreenRect(_target);
             HideRing();
             // Klick erst nach dem aktuellen Tick auslösen, damit ein eventueller
             // Fehler im Handler den Timer-Tick nicht beeinträchtigt.
@@ -147,6 +169,22 @@ public sealed class DwellClicker : IDisposable
                 try { InvokeClick(target); }
                 catch { /* vom globalen Handler protokolliert */ }
             }), DispatcherPriority.Input);
+        }
+    }
+
+    /// <summary>Bildschirmrechteck (physische Pixel) eines Elements; null, wenn es
+    /// nicht (mehr) im Visual-Baum hängt.</summary>
+    private static Rect? GetScreenRect(ButtonBase b)
+    {
+        try
+        {
+            var topLeft = b.PointToScreen(new Point(0, 0));
+            var bottomRight = b.PointToScreen(new Point(b.ActualWidth, b.ActualHeight));
+            return new Rect(topLeft, bottomRight);
+        }
+        catch
+        {
+            return null;
         }
     }
 

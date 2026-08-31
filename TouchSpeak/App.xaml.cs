@@ -38,10 +38,19 @@ public partial class App : Application
             // Protokollieren darf selbst nie zum Absturz führen.
         }
 
-        MessageBox.Show(
-            "Es ist ein unerwarteter Fehler aufgetreten. Die App läuft weiter.\n\n" +
-            e.Exception.Message,
-            "TouchSpeak", MessageBoxButton.OK, MessageBoxImage.Warning);
+        // Im Fenster als Banner melden (per Verweil-Klick bedienbar); die MessageBox
+        // bleibt nur als Fallback für Fehler vor dem Aufbau des Hauptfensters.
+        if (MainWindow is MainWindow mw && mw.IsLoaded)
+        {
+            mw.ShowError("Unerwarteter Fehler – die App läuft weiter:\n" + e.Exception.Message);
+        }
+        else
+        {
+            MessageBox.Show(
+                "Es ist ein unerwarteter Fehler aufgetreten. Die App läuft weiter.\n\n" +
+                e.Exception.Message,
+                "TouchSpeak", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
     }
 
     /// <summary>

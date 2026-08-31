@@ -388,6 +388,44 @@
             </Border>
         </Grid>
 
+        <!-- Wiederherstellen-Abfrage beim Start: als Overlay statt MessageBox, damit sie
+             auch per Verweil-Klick (Kopfsteuerung) bedienbar ist – native Dialoge kann
+             der DwellClicker nicht klicken. „Nein" ist bewusst ein normaler Button:
+             die abgelehnte Sicherung wird nicht gelöscht, sondern nur nach
+             autosave.verworfen.rtf verschoben. -->
+        <Grid x:Name="RestoreOverlay" Visibility="Collapsed" Background="#CC101010">
+            <Border Background="{StaticResource PanelBackground}" CornerRadius="14"
+                    Padding="36" MaxWidth="760"
+                    HorizontalAlignment="Center" VerticalAlignment="Center">
+                <StackPanel>
+                    <TextBlock Text="&#x1F4C4; Nicht gespeicherter Text gefunden" FontSize="36" FontWeight="Bold"
+                               TextAlignment="Center" TextWrapping="Wrap"/>
+                    <TextBlock Text="Aus der letzten Sitzung ist ein nicht gespeicherter Text vorhanden. Möchten Sie ihn wiederherstellen?"
+                               FontSize="24" Opacity="0.85" TextAlignment="Center" TextWrapping="Wrap"
+                               Margin="0,10,0,28"/>
+                    <Button Style="{StaticResource BigNavButton}" MinHeight="96" FontSize="28"
+                            Click="RestoreYes_Click"
+                            Content="&#x2714;  Ja, Text wiederherstellen"/>
+                    <Button Style="{StaticResource ToolButton}" MinHeight="72" FontSize="24"
+                            Margin="0,16,0,0" Click="RestoreNo_Click"
+                            Content="&#x2715;  Nein, leer starten"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- Fehlermeldungen als Banner statt MessageBox: per Verweil-Klick schließbar
+             und verschwindet nach einigen Sekunden von selbst. -->
+        <Border x:Name="ErrorBanner" Visibility="Collapsed" Background="#FFB3261E" CornerRadius="10"
+                VerticalAlignment="Top" HorizontalAlignment="Center" Margin="16,16,16,0"
+                Padding="20,12" MaxWidth="900">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock x:Name="ErrorBannerText" Foreground="White" FontSize="22"
+                           TextWrapping="Wrap" VerticalAlignment="Center" MaxWidth="640"/>
+                <Button Style="{StaticResource ToolButton}" Content="OK" MinWidth="90"
+                        Margin="16,0,0,0" Click="ErrorBanner_Close"/>
+            </StackPanel>
+        </Border>
+
         <!-- Overlay für den Verweil-Klick-Fortschrittsring (Kopfsteuerung).
              Liegt über allem und lässt Maus-/Kopfmaus-Eingaben durch. -->
         <Canvas x:Name="DwellOverlay" IsHitTestVisible="False"/>

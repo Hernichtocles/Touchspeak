@@ -36,8 +36,33 @@ public static class DocumentIoService
                 SetPlainText(editor, ReadDocx(path));
                 break;
             default: // .txt and anything else
-                SetPlainText(editor, File.ReadAllText(path, Encoding.UTF8));
+                SetPlainText(editor, ReadTextFile(path));
                 break;
+        }
+    }
+
+    /// <summary>Liest eine Textdatei: eine BOM wird respektiert (UTF-8/16), sonst wird
+    /// strikt UTF-8 versucht; schlägt das fehl (alte ANSI-Datei), wird Latin-1
+    /// angenommen, damit deutsche Umlaute nicht als Ersatzzeichen enden.</summary>
+    private static string ReadTextFile(string path)
+    {
+        var bytes = File.ReadAllBytes(path);
+
+        if (bytes.Length >= 2 && (bytes[0] is 0xEF or 0xFF or 0xFE))
+        {
+            using var reader = new StreamReader(new MemoryStream(bytes), Encoding.UTF8,
+                detectEncodingFromByteOrderMarks: true);
+            return reader.ReadToEnd();
+        }
+
+        try
+        {
+            return new UTF8Encoding(encoderShouldEmitUTF8Identifier: false,
+                throwOnInvalidBytes: true).GetString(bytes);
+        }
+        catch (DecoderFallbackException)
+        {
+            return Encoding.Latin1.GetString(bytes);
         }
     }
 
@@ -66,8 +91,14 @@ public static class DocumentIoService
 
         foreach (var para in body.Elements<W.Paragraph>())
         {
-            var text = string.Concat(para.Descendants<W.Text>().Select(t => t.Text));
-            sb.AppendLine(text);
+            // In Dokumentreihenfolge laufen, damit manuelle Zeilenumbrüche (w:br)
+            // innerhalb eines Absatzes erhalten bleiben.
+            foreach (var node in para.Descendants())
+            {
+                if (node is W.Text t) sb.Append(t.Text);
+                else if (node is W.Break or W.CarriageReturn) sb.Append('\n');
+            }
+            sb.AppendLine();
         }
         return sb.ToString().TrimEnd('\n', '\r');
     }
