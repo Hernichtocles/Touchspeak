@@ -11,12 +11,15 @@
         Foreground="{StaticResource TextForeground}">
 
     <Window.Resources>
+        <!-- Werkzeug-Taste. Die Viewbox verkleinert nur die Beschriftung, falls die Taste
+             auf schmalen Bildschirmen (Tablet, 1280 px logisch) zu eng wird – der Text wird
+             nie abgeschnitten, die Leiste bricht nie in eine zweite Zeile um. -->
         <Style x:Key="ToolButton" TargetType="Button">
             <Setter Property="MinHeight" Value="60"/>
-            <Setter Property="MinWidth" Value="140"/>
             <Setter Property="Margin" Value="4"/>
-            <Setter Property="Padding" Value="12,6"/>
+            <Setter Property="Padding" Value="10,6"/>
             <Setter Property="FontSize" Value="20"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Foreground" Value="{StaticResource TextForeground}"/>
             <Setter Property="Background" Value="{StaticResource KeySpecialBackground}"/>
             <Setter Property="BorderThickness" Value="0"/>
@@ -25,12 +28,15 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border x:Name="bd" Background="{TemplateBinding Background}"
-                                CornerRadius="8" Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                CornerRadius="10" Padding="{TemplateBinding Padding}">
+                            <Viewbox StretchDirection="DownOnly" Stretch="Uniform">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Viewbox>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="bd" Property="Background" Value="{StaticResource AccentBackground}"/>
+                                <Setter Property="Foreground" Value="White"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter TargetName="bd" Property="Opacity" Value="0.4"/>
@@ -43,9 +49,66 @@
 
         <Style x:Key="BigNavButton" TargetType="Button" BasedOn="{StaticResource ToolButton}">
             <Setter Property="MinHeight" Value="72"/>
-            <Setter Property="MinWidth" Value="180"/>
             <Setter Property="FontSize" Value="24"/>
-            <Setter Property="Background" Value="{StaticResource AccentBackground}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Background" Value="{StaticResource TileBlue}"/>
+        </Style>
+
+        <!-- Wortvorschlag über der Tastatur: helles Blau, dunkelblaue Schrift. -->
+        <Style x:Key="SuggestionButton" TargetType="Button" BasedOn="{StaticResource ToolButton}">
+            <Setter Property="MinHeight" Value="58"/>
+            <Setter Property="FontSize" Value="24"/>
+            <Setter Property="Foreground" Value="{StaticResource SuggestionForeground}"/>
+            <Setter Property="Background" Value="{StaticResource SuggestionBackground}"/>
+        </Style>
+
+        <!-- Pause (Bediensperre): eine Taste für alle Seiten, oben rechts. Solange die
+             Sperre aktiv ist, leuchtet sie rot (pulsierender Schein). -->
+        <Style x:Key="PauseButton" TargetType="Button">
+            <Setter Property="MinHeight" Value="72"/>
+            <Setter Property="MinWidth" Value="150"/>
+            <Setter Property="Margin" Value="4"/>
+            <Setter Property="Padding" Value="12,6"/>
+            <Setter Property="FontSize" Value="22"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{StaticResource TextForeground}"/>
+            <Setter Property="Background" Value="{StaticResource KeySpecialBackground}"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" Background="{TemplateBinding Background}"
+                                CornerRadius="10" Padding="{TemplateBinding Padding}">
+                            <Border.Effect>
+                                <DropShadowEffect x:Name="glow" Color="#FFFF3B30" BlurRadius="34"
+                                                  ShadowDepth="0" Opacity="0"/>
+                            </Border.Effect>
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Opacity" Value="0.85"/>
+                            </Trigger>
+                            <Trigger Property="Tag" Value="on">
+                                <Setter TargetName="bd" Property="Background" Value="{StaticResource LockRed}"/>
+                                <Setter Property="Foreground" Value="White"/>
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard x:Name="glowPulse">
+                                        <Storyboard RepeatBehavior="Forever" AutoReverse="True">
+                                            <DoubleAnimation Storyboard.TargetName="glow"
+                                                             Storyboard.TargetProperty="Opacity"
+                                                             From="0.45" To="1" Duration="0:0:0.7"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <StopStoryboard BeginStoryboardName="glowPulse"/>
+                                </Trigger.ExitActions>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
 
         <!-- Kopflose Tabs: der Wechsel läuft ausschließlich über die großen Buttons.
@@ -63,9 +126,11 @@
             </Setter>
         </Style>
 
-        <!-- Befehlskachel (Symbol + Beschriftung) für die Vorlesen-Seite. -->
+        <!-- Befehlskachel (Symbol + Beschriftung) für die Vorlesen-Seite. Keine große
+             Mindesthöhe: die Kachelreihen teilen sich die Seitenhöhe, und die Viewbox
+             verkleinert Symbol + Text nur, wenn die Kachel dafür zu klein ist. -->
         <Style x:Key="Tile" TargetType="Button">
-            <Setter Property="MinHeight" Value="116"/>
+            <Setter Property="MinHeight" Value="48"/>
             <Setter Property="Margin" Value="6"/>
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="Background" Value="{StaticResource TileBlue}"/>
@@ -74,8 +139,10 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border x:Name="bd" Background="{TemplateBinding Background}"
-                                CornerRadius="10" Padding="6">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                CornerRadius="12" Padding="8,6">
+                            <Viewbox StretchDirection="DownOnly" Stretch="Uniform">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Viewbox>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
@@ -109,7 +176,6 @@
         <Style x:Key="TileLabel" TargetType="TextBlock">
             <Setter Property="FontSize" Value="18"/>
             <Setter Property="TextAlignment" Value="Center"/>
-            <Setter Property="TextWrapping" Value="Wrap"/>
             <Setter Property="HorizontalAlignment" Value="Center"/>
         </Style>
     </Window.Resources>
@@ -131,17 +197,18 @@
                     <RowDefinition Height="6*"/>
                 </Grid.RowDefinitions>
 
-                <WrapPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,6">
-                    <Button Style="{StaticResource ToolButton}" Click="New_Click" Content="&#x1F4C4;  Neu"/>
+                <!-- Werkzeugleiste: immer EINE Zeile mit gleich breiten Tasten (kein Umbruch,
+                     der auf dem Tablet die Tastatur nach unten aus dem Bild schieben würde).
+                     Rechts bleibt Platz für die fensterweite Pause-Taste. -->
+                <UniformGrid Grid.Row="0" Rows="1" Margin="0,0,158,6">
+                    <Button Style="{StaticResource ToolButton}" Click="New_Click" Content="&#x1F5D1;  Alles löschen"/>
                     <Button Style="{StaticResource ToolButton}" Click="Open_Click" Content="&#x1F4C2;  Öffnen"/>
                     <Button Style="{StaticResource ToolButton}" Click="Save_Click" Content="&#x1F4BE;  Exportieren"/>
-                    <Button Style="{StaticResource ToolButton}" Click="ToggleLayout_Click"
-                            x:Name="LayoutButton" Content="&#x2328;  Tastatur: QWERTZ"/>
                     <Button Style="{StaticResource ToolButton}" Click="Settings_Click" Content="&#x2699;  Einstellungen"/>
-                    <Button Style="{StaticResource ToolButton}" Click="SpeakAll_Click" Content="&#x1F509;  Alles Vorlesen"/>
+                    <Button Style="{StaticResource ToolButton}" Click="SpeakAll_Click" Content="&#x1F509;  Alles vorlesen"/>
                     <Button Style="{StaticResource BigNavButton}" Click="Speak_Click" Content="&#x1F50A;  Zum Vorlesen"/>
                     <Button Style="{StaticResource ToolButton}" Click="Quit_Click" Content="&#x23FB;  Beenden"/>
-                </WrapPanel>
+                </UniformGrid>
 
                 <Border Grid.Row="1" x:Name="WritingEditorHost" Background="{StaticResource PanelBackground}" CornerRadius="10" Padding="4">
                     <RichTextBox x:Name="Editor" FontSize="36" Background="Transparent"
@@ -154,11 +221,11 @@
                 </Border>
 
                 <UniformGrid Grid.Row="2" x:Name="SuggestionRow" Rows="1" Columns="5" Margin="0,6">
-                    <Button x:Name="Sug0" Style="{StaticResource ToolButton}" Click="Suggestion_Click" Visibility="Hidden"/>
-                    <Button x:Name="Sug1" Style="{StaticResource ToolButton}" Click="Suggestion_Click" Visibility="Hidden"/>
-                    <Button x:Name="Sug2" Style="{StaticResource ToolButton}" Click="Suggestion_Click" Visibility="Hidden"/>
-                    <Button x:Name="Sug3" Style="{StaticResource ToolButton}" Click="Suggestion_Click" Visibility="Hidden"/>
-                    <Button x:Name="Sug4" Style="{StaticResource ToolButton}" Click="Suggestion_Click" Visibility="Hidden"/>
+                    <Button x:Name="Sug0" Style="{StaticResource SuggestionButton}" Click="Suggestion_Click" Visibility="Hidden"/>
+                    <Button x:Name="Sug1" Style="{StaticResource SuggestionButton}" Click="Suggestion_Click" Visibility="Hidden"/>
+                    <Button x:Name="Sug2" Style="{StaticResource SuggestionButton}" Click="Suggestion_Click" Visibility="Hidden"/>
+                    <Button x:Name="Sug3" Style="{StaticResource SuggestionButton}" Click="Suggestion_Click" Visibility="Hidden"/>
+                    <Button x:Name="Sug4" Style="{StaticResource SuggestionButton}" Click="Suggestion_Click" Visibility="Hidden"/>
                 </UniformGrid>
 
                 <ctrl:TouchKeyboard Grid.Row="3" x:Name="Keyboard"/>
@@ -168,25 +235,27 @@
         <!-- ===================== READING TAB ===================== -->
         <TabItem x:Name="ReadingTab" Header="  Vorlesen  " FontSize="18">
             <Grid Margin="6">
+                <!-- Anteilige Zeilen statt fester Kachelhöhen: Text 2 Anteile, die vier blauen
+                     Reihen 4, die zwei roten 2 – so passt die Seite auf jede Bildschirmhöhe. -->
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="2*" MinHeight="110"/>
+                    <RowDefinition Height="4*"/>
+                    <RowDefinition Height="2*"/>
                 </Grid.RowDefinitions>
 
-                <WrapPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,6">
+                <WrapPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,158,6">
                     <Button Style="{StaticResource BigNavButton}" Click="Write_Click" Content="&#x270F;  Zum Schreiben"/>
-                    <Button Style="{StaticResource ToolButton}" Click="Settings_Click" Content="&#x2699;  Einstellungen"/>
+                    <Button Style="{StaticResource ToolButton}" MinHeight="72" Click="Settings_Click" Content="&#x2699;  Einstellungen"/>
                 </WrapPanel>
 
                 <!-- Textbereich; der Editor wird hierher verschoben, sobald der Reiter aktiv ist. -->
-                <Border Grid.Row="1" x:Name="ReadingEditorHost" MinHeight="120"
+                <Border Grid.Row="1" x:Name="ReadingEditorHost"
                         Background="{StaticResource PanelBackground}"
                         CornerRadius="10" Padding="4" Margin="0,0,0,8"/>
 
-                <StackPanel Grid.Row="2">
-                    <!-- Bearbeiten & Navigieren (blau) -->
-                    <UniformGrid Columns="4">
+                <!-- Bearbeiten & Navigieren (blau) -->
+                <UniformGrid Grid.Row="2" Columns="4">
                         <Button Style="{StaticResource Tile}" Click="Copy_Click">
                             <StackPanel><TextBlock Style="{StaticResource TileGlyph}" Text="&#x1F4CB;"/>
                                 <TextBlock Style="{StaticResource TileLabel}" Text="Kopieren"/></StackPanel>
@@ -254,10 +323,10 @@
                             <StackPanel><TextBlock Style="{StaticResource TileGlyph}" Text="&#x21A6;"/>
                                 <TextBlock Style="{StaticResource TileLabel}" Text="Zeilenende"/></StackPanel>
                         </Button>
-                    </UniformGrid>
+                </UniformGrid>
 
-                    <!-- Sprechen (rot) -->
-                    <UniformGrid Columns="3" Margin="0,4,0,0">
+                <!-- Sprechen (rot) -->
+                <UniformGrid Grid.Row="3" Columns="3" Margin="0,4,0,0">
                         <Button Style="{StaticResource TileRed}" Click="SpeakParagraph_Click">
                             <StackPanel><TextBlock Style="{StaticResource TileGlyph}" Text="&#x1F5E3;"/>
                                 <TextBlock Style="{StaticResource TileLabel}" Text="Absatz Sprechen"/></StackPanel>
@@ -282,8 +351,7 @@
                             <StackPanel><TextBlock Style="{StaticResource TileGlyph}" Text="&#x23F9;"/>
                                 <TextBlock Style="{StaticResource TileLabel}" Text="Sprechen Beenden"/></StackPanel>
                         </Button>
-                    </UniformGrid>
-                </StackPanel>
+                </UniformGrid>
             </Grid>
         </TabItem>
 
@@ -295,9 +363,9 @@
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
-                <WrapPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,6">
+                <WrapPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,158,6">
                     <Button Style="{StaticResource BigNavButton}" Click="Write_Click" Content="&#x270F;  Zum Schreiben"/>
-                    <Button Style="{StaticResource ToolButton}" Click="Speak_Click" Content="&#x1F50A;  Zum Vorlesen"/>
+                    <Button Style="{StaticResource ToolButton}" MinHeight="72" Click="Speak_Click" Content="&#x1F50A;  Zum Vorlesen"/>
                 </WrapPanel>
 
                 <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
@@ -352,7 +420,7 @@
         </TabItem>
     </TabControl>
 
-        <!-- Sicherheitsabfrage für „Neu": liegt über der gesamten Oberfläche.
+        <!-- Sicherheitsabfrage für „Alles löschen": liegt über der gesamten Oberfläche.
              Die rote Fläche ist bewusst KEIN Button, damit der Verweil-Klick der
              Kopfsteuerung (1,2 s) sie nicht auslösen kann. Gelöscht wird erst,
              wenn der Zeiger 10 Sekunden ununterbrochen darauf bleibt. -->
@@ -415,7 +483,7 @@
             </Border>
         </Grid>
 
-        <!-- Sicherheitsabfrage für „Beenden": gleiche Halte-Mechanik wie bei „Neu".
+        <!-- Sicherheitsabfrage für „Beenden": gleiche Halte-Mechanik wie bei „Alles löschen".
              Das Fenster ist rahmenloses Vollbild (keine Titelleiste, Taskleiste verdeckt),
              darum ist dieser Weg der einzige Ausgang per Kopfsteuerung – ein einfacher
              Verweil-Klick darf die App aber nicht versehentlich schließen. -->
@@ -462,6 +530,25 @@
                         Margin="16,0,0,0" Click="ErrorBanner_Close"/>
             </StackPanel>
         </Border>
+
+        <!-- Pause (Bediensperre): deckt alle Seiten und Abfragen ab und schluckt jede
+             Eingabe – auch der Verweil-Klick findet darunter keine Schaltfläche mehr.
+             Einzig die Pause-Taste darüber bleibt bedienbar und hebt die Sperre auf. -->
+        <Grid x:Name="LockOverlay" Visibility="Collapsed" Background="{StaticResource LockOverlayBackground}">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="40">
+                <TextBlock Text="&#x1F4A4;" FontSize="110" Foreground="White" Opacity="0.9"
+                           TextAlignment="Center"/>
+                <TextBlock Text="Pause &#x2013; Bedienung gesperrt" FontSize="40" FontWeight="Bold"
+                           Foreground="White" TextAlignment="Center" Margin="0,8,0,12"/>
+                <TextBlock Text="Alle Tasten sind gesperrt, damit nichts aus Versehen passiert. Zum Weitermachen oben rechts auf die rot leuchtende Pause-Taste klicken."
+                           FontSize="24" Foreground="White" Opacity="0.85"
+                           TextAlignment="Center" TextWrapping="Wrap" MaxWidth="760"/>
+            </StackPanel>
+        </Grid>
+
+        <Button x:Name="PauseButton" Style="{StaticResource PauseButton}" Click="Pause_Click"
+                Content="&#x1F4A4;  Pause"
+                HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,14,14,0"/>
 
         <!-- Overlay für den Verweil-Klick-Fortschrittsring (Kopfsteuerung).
              Liegt über allem und lässt Maus-/Kopfmaus-Eingaben durch. -->

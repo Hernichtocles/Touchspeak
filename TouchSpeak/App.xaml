@@ -12,6 +12,23 @@
         <SolidColorBrush x:Key="HighlightBackground" Color="#FFFFE08A"/>
         <SolidColorBrush x:Key="HighlightForeground" Color="#FF1E2230"/>
 
+        <!-- Bildschirmtastatur: blaue Tasten mit weißer Schrift auf hellem Grund.
+             Buchstaben = KeyBlue, Befehlstasten (Leertaste, Löschen, Zeile, Shift …) = KeyBlueDark. -->
+        <SolidColorBrush x:Key="KeyboardPanel" Color="#FFE4EAF3"/>
+        <SolidColorBrush x:Key="KeyBlue" Color="#FF2F6FB0"/>
+        <SolidColorBrush x:Key="KeyBlueDark" Color="#FF1F4E85"/>
+        <SolidColorBrush x:Key="KeyBlueHover" Color="#FF4C8BF5"/>
+        <SolidColorBrush x:Key="KeyBluePressed" Color="#FF163A63"/>
+        <SolidColorBrush x:Key="KeyForeground" Color="#FFFFFFFF"/>
+
+        <!-- Wortvorschläge über der Tastatur -->
+        <SolidColorBrush x:Key="SuggestionBackground" Color="#FFDCE8F8"/>
+        <SolidColorBrush x:Key="SuggestionForeground" Color="#FF1E3A5F"/>
+
+        <!-- Pause (Bediensperre): Taste leuchtet rot, solange die Sperre aktiv ist. -->
+        <SolidColorBrush x:Key="LockRed" Color="#FFD6342B"/>
+        <SolidColorBrush x:Key="LockOverlayBackground" Color="#D90F1A2B"/>
+
         <!-- Kachel-Farben für die Vorlesen-Befehlsseite (blau = bearbeiten/navigieren, rot = sprechen) -->
         <SolidColorBrush x:Key="TileBlue" Color="#FF2F6FB0"/>
         <SolidColorBrush x:Key="TileRed" Color="#FFC0453F"/>

@@ -24,6 +24,10 @@
     <None Update="Resources\de_words.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <!-- Piper (neuronale Offline-Sprachausgabe) samt Stimmmodellen (z. B. Thorsten):
+         wird 1:1 in den Ausgabe- und Publish-Ordner kopiert und von SpeechService
+         als Hilfsprogramm gestartet. -->
+    <None Include="Piper\**\*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

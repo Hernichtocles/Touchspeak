@@ -30,6 +30,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        ApplyWindowSizeOverride();
 
         // Verweil-Klick (Kopfsteuerung); wird über die Einstellungen aktiviert.
         _dwell = new DwellClicker(this, DwellOverlay);
@@ -40,7 +41,7 @@ public partial class MainWindow : Window
         Keyboard.BackspacePressed += OnBackspace;
         Keyboard.EnterPressed += OnEnter;
         Keyboard.PhraseInput += OnPhrase;
-        Keyboard.LayoutChanged += _ => UpdateLayoutButton();
+        Keyboard.DeleteWordPressed += OnDeleteWord;
 
         // Leerzeichen einer physischen Tastatur laufen an der Bildschirmtastatur
         // vorbei direkt in die RichTextBox; hier abfangen, damit das fertige Wort
@@ -48,6 +49,7 @@ public partial class MainWindow : Window
         Editor.PreviewKeyDown += Editor_PreviewKeyDown;
 
         _speech.Completed += (_, _) => Dispatcher.Invoke(() => { /* manual navigation */ });
+        _speech.Failed += (_, msg) => Dispatcher.Invoke(() => ShowError("Sprachausgabe nicht möglich:\n" + msg));
 
         _errorBannerTimer.Tick += (_, _) =>
         {
@@ -115,7 +117,6 @@ public partial class MainWindow : Window
         _speech.Volume = _settings.SpeechVolume;
 
         Keyboard.UseFrequencyLayout = _settings.UseFrequencyLayout;
-        UpdateLayoutButton();
 
         if (_settings.SpeakLanguage == SpeakLanguage.English) LangEnglish.IsChecked = true;
         else LangGerman.IsChecked = true;
@@ -557,19 +558,6 @@ public partial class MainWindow : Window
         }
     }
 
-    private void ToggleLayout_Click(object sender, RoutedEventArgs e)
-    {
-        Keyboard.UseFrequencyLayout = !Keyboard.UseFrequencyLayout;
-        UpdateLayoutButton();
-    }
-
-    private void UpdateLayoutButton()
-    {
-        LayoutButton.Content = Keyboard.UseFrequencyLayout
-            ? "\u2328  Tastatur: H\u00e4ufigkeit"
-            : "\u2328  Tastatur: QWERTZ";
-    }
-
     private void Speak_Click(object sender, RoutedEventArgs e)
     {
         Tabs.SelectedItem = ReadingTab; // switch to reading tab
@@ -673,13 +661,7 @@ public partial class MainWindow : Window
 
     // ---------------- Reading tab: speaking tiles ----------------
 
-    private void SpeakParagraph_Click(object sender, RoutedEventArgs e)
-    {
-        var para = Editor.CaretPosition.Paragraph;
-        if (para != null) SpeakText(new TextRange(para.ContentStart, para.ContentEnd).Text);
-    }
-
-    private void SpeakSentence_Click(object sender, RoutedEventArgs e) => SpeakText(GetSentenceAtCaret());
+    // SpeakParagraph_Click / SpeakSentence_Click: siehe MainWindow.Features.cs (sprechen + weiterspringen).
     private void SpeakWord_Click(object sender, RoutedEventArgs e) => SpeakText(GetWordAtCaret());
     private void SpeakAll_Click(object sender, RoutedEventArgs e) => SpeakText(DocumentIoService.GetPlainText(Editor));
     private void SpeakSelection_Click(object sender, RoutedEventArgs e) => SpeakText(Editor.Selection.Text);

@@ -13,6 +13,8 @@ public partial class TouchKeyboard : UserControl
     public event Action<string>? CharInput;
     public event Action? SpacePressed;
     public event Action? BackspacePressed;
+    /// <summary>Fired by the "⌫ Wort" key: delete the word before the caret.</summary>
+    public event Action? DeleteWordPressed;
     public event Action? EnterPressed;
     /// <summary>Fired for message tiles (e.g. "WC"); carries the message text.</summary>
     public event Action<string>? PhraseInput;
@@ -57,6 +59,8 @@ public partial class TouchKeyboard : UserControl
         }
     }
 
+    private static Brush Res(string key) => (Brush)Application.Current.Resources[key];
+
     private Button CreateButton(KeyDef key)
     {
         var button = new Button { Style = (Style)Resources["KeyButtonStyle"] };
@@ -70,41 +74,51 @@ public partial class TouchKeyboard : UserControl
 
             case KeyType.Space:
                 button.Content = key.Label;
+                button.FontSize = 32;
                 button.Click += (_, _) => SpacePressed?.Invoke();
-                button.Background = (Brush)Application.Current.Resources["KeySpecialBackground"];
+                button.Background = Res("KeyBlueDark");
                 break;
 
             case KeyType.Backspace:
                 button.Content = key.Label;
+                button.FontSize = 28;
                 button.Click += (_, _) => BackspacePressed?.Invoke();
-                button.Background = (Brush)Application.Current.Resources["KeySpecialBackground"];
+                button.Background = Res("KeyBlueDark");
+                break;
+
+            case KeyType.DeleteWord:
+                button.Content = key.Label;
+                button.FontSize = 28;
+                button.Click += (_, _) => DeleteWordPressed?.Invoke();
+                button.Background = Res("KeyBlueDark");
                 break;
 
             case KeyType.Enter:
                 button.Content = key.Label;
+                button.FontSize = 28;
                 button.Click += (_, _) => EnterPressed?.Invoke();
-                button.Background = (Brush)Application.Current.Resources["KeySpecialBackground"];
+                button.Background = Res("KeyBlueDark");
                 break;
 
             case KeyType.Shift:
                 button.Content = key.Label;
                 button.FontSize = 42;
-                button.Background = _shift
-                    ? (Brush)Application.Current.Resources["AccentBackground"]
-                    : (Brush)Application.Current.Resources["KeySpecialBackground"];
+                button.Background = Res("KeyBlueDark");
+                button.Tag = _shift ? "on" : null;   // aktive Umschaltung: gelb (Style-Trigger)
                 button.Click += (_, _) => { _shift = !_shift; Rebuild(); };
                 break;
 
             case KeyType.SwitchLayout:
                 button.Content = key.Label;
                 button.FontSize = 24;
-                button.Background = (Brush)Application.Current.Resources["KeySpecialBackground"];
+                button.Background = Res("KeyBlueDark");
                 button.Click += (_, _) => { _useFrequency = !_useFrequency; LayoutChanged?.Invoke(_useFrequency); Rebuild(); };
                 break;
 
             case KeyType.Phrase:
                 button.Content = key.Label;
-                button.Background = (Brush)Application.Current.Resources["KeySpecialBackground"];
+                button.FontSize = 32;
+                button.Background = Res("KeyBlueDark");
                 button.Click += (_, _) => PhraseInput?.Invoke(key.Lower);
                 break;
         }

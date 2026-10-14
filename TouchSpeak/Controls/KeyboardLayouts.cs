@@ -4,7 +4,8 @@ public enum KeyType
 {
     Char,         // inserts a character (letter or punctuation)
     Shift,        // toggles upper/lower case
-    Backspace,
+    Backspace,    // deletes one character
+    DeleteWord,   // deletes the word before the caret
     Enter,
     Space,
     SwitchLayout, // QWERTZ <-> frequency layout
@@ -46,26 +47,27 @@ public static class KeyboardLayouts
 
     private static List<KeyDef> CommandRow() => new()
     {
-        KeyDef.Special(KeyType.SwitchLayout, "ABC \u21c4 H\u00e4ufig", 1.8),
+        KeyDef.Special(KeyType.SwitchLayout, "ABC ⇄ Häufig", 1.8),
         KeyDef.Punct(","),
         KeyDef.Punct("."),
         KeyDef.Punct("?"),
         KeyDef.Punct("!"),
-        KeyDef.Special(KeyType.Space, "Leertaste", 4.5),
-        KeyDef.Special(KeyType.Backspace, "\u232b L\u00f6schen", 1.8),
-        KeyDef.Special(KeyType.Enter, "\u21b5 Zeile", 1.6),
+        KeyDef.Special(KeyType.Space, "Leertaste", 4.0),
+        KeyDef.Special(KeyType.DeleteWord, "⌫ Wort", 1.6),
+        KeyDef.Special(KeyType.Backspace, "⌫ Löschen", 1.8),
+        KeyDef.Special(KeyType.Enter, "↵ Zeile", 1.6),
     };
 
     public static List<List<KeyDef>> Qwertz()
     {
         var rows = new List<List<KeyDef>>
         {
-            Letters("q", "w", "e", "r", "t", "z", "u", "i", "o", "p", "\u00fc"),
-            Letters("a", "s", "d", "f", "g", "h", "j", "k", "l", "\u00f6", "\u00e4"),
-            new() { KeyDef.Special(KeyType.Shift, "\u21e7", 1.6) }
+            Letters("q", "w", "e", "r", "t", "z", "u", "i", "o", "p", "ü"),
+            Letters("a", "s", "d", "f", "g", "h", "j", "k", "l", "ö", "ä"),
+            new() { KeyDef.Special(KeyType.Shift, "⇧", 1.6) }
         };
         rows[2].AddRange(Letters("y", "x", "c", "v", "b", "n", "m"));
-        rows[2].Add(KeyDef.Letter("\u00df"));
+        rows[2].Add(KeyDef.Letter("ß"));
         rows.Add(CommandRow());
         return rows;
     }
@@ -76,15 +78,15 @@ public static class KeyboardLayouts
         // Top-left cell is the Shift key; bottom-right is the "WC" message tile.
         var rows = new List<List<KeyDef>>
         {
-            new() { KeyDef.Special(KeyType.Shift, "\u21e7") },
+            new() { KeyDef.Special(KeyType.Shift, "⇧") },
             new(),
             new(),
             new()
         };
-        rows[0].AddRange(Letters("e", "i", "t", "u", "b", "w", "\u00df"));
+        rows[0].AddRange(Letters("e", "i", "t", "u", "b", "w", "ß"));
         rows[1].AddRange(Letters("n", "r", "a", "g", "m", "k", "p", "q"));
-        rows[2].AddRange(Letters("s", "h", "l", "f", "z", "\u00fc", "j", "y"));
-        rows[3].AddRange(Letters("d", "c", "o", "v", "\u00e4", "\u00f6", "x"));
+        rows[2].AddRange(Letters("s", "h", "l", "f", "z", "ü", "j", "y"));
+        rows[3].AddRange(Letters("d", "c", "o", "v", "ä", "ö", "x"));
         rows[3].Add(KeyDef.Phrase("WC", "Ich muss zur Toilette."));
         rows.Add(CommandRow());
         return rows;
