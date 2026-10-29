@@ -54,6 +54,19 @@
             <Setter Property="Background" Value="{StaticResource TileBlue}"/>
         </Style>
 
+        <!-- Kompakte Leiste der Schreiben-Seite: bewusst flach, damit die Tastatur darunter
+             so viel Höhe wie möglich bekommt (große Ziele für die Kopfsteuerung). -->
+        <Style x:Key="SmallToolButton" TargetType="Button" BasedOn="{StaticResource ToolButton}">
+            <Setter Property="MinHeight" Value="60"/>
+            <Setter Property="FontSize" Value="19"/>
+            <Setter Property="Padding" Value="9,5"/>
+        </Style>
+        <Style x:Key="SmallNavButton" TargetType="Button" BasedOn="{StaticResource BigNavButton}">
+            <Setter Property="MinHeight" Value="60"/>
+            <Setter Property="FontSize" Value="20"/>
+            <Setter Property="Padding" Value="9,5"/>
+        </Style>
+
         <!-- Wortvorschlag über der Tastatur: helles Blau, dunkelblaue Schrift. -->
         <Style x:Key="SuggestionButton" TargetType="Button" BasedOn="{StaticResource ToolButton}">
             <Setter Property="MinHeight" Value="58"/>
@@ -65,11 +78,11 @@
         <!-- Pause (Bediensperre): eine Taste für alle Seiten, oben rechts. Solange die
              Sperre aktiv ist, leuchtet sie rot (pulsierender Schein). -->
         <Style x:Key="PauseButton" TargetType="Button">
-            <Setter Property="MinHeight" Value="72"/>
-            <Setter Property="MinWidth" Value="150"/>
+            <Setter Property="MinHeight" Value="60"/>
+            <Setter Property="MinWidth" Value="140"/>
             <Setter Property="Margin" Value="4"/>
-            <Setter Property="Padding" Value="12,6"/>
-            <Setter Property="FontSize" Value="22"/>
+            <Setter Property="Padding" Value="10,4"/>
+            <Setter Property="FontSize" Value="20"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Foreground" Value="{StaticResource TextForeground}"/>
             <Setter Property="Background" Value="{StaticResource KeySpecialBackground}"/>
@@ -191,23 +204,25 @@
             <Grid Margin="6">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="4*"/>
+                    <!-- Text bekommt ~30 % der Höhe (er scrollt), die Tastatur ~70 %:
+                         die Kopfsteuerung braucht große Tasten, aber ein paar Zeilen Text
+                         sollen lesbar bleiben. -->
+                    <RowDefinition Height="3*" MinHeight="110"/>
                     <RowDefinition Height="Auto"/>
-                    <!-- Tastatur bekommt ~60 % der verfügbaren Höhe (Kopfsteuerung braucht große Ziele). -->
-                    <RowDefinition Height="6*"/>
+                    <RowDefinition Height="7*"/>
                 </Grid.RowDefinitions>
 
-                <!-- Werkzeugleiste: immer EINE Zeile mit gleich breiten Tasten (kein Umbruch,
+                <!-- Werkzeugleiste: immer EINE flache Zeile mit gleich breiten Tasten (kein Umbruch,
                      der auf dem Tablet die Tastatur nach unten aus dem Bild schieben würde).
                      Rechts bleibt Platz für die fensterweite Pause-Taste. -->
-                <UniformGrid Grid.Row="0" Rows="1" Margin="0,0,158,6">
-                    <Button Style="{StaticResource ToolButton}" Click="New_Click" Content="&#x1F5D1;  Alles löschen"/>
-                    <Button Style="{StaticResource ToolButton}" Click="Open_Click" Content="&#x1F4C2;  Öffnen"/>
-                    <Button Style="{StaticResource ToolButton}" Click="Save_Click" Content="&#x1F4BE;  Exportieren"/>
-                    <Button Style="{StaticResource ToolButton}" Click="Settings_Click" Content="&#x2699;  Einstellungen"/>
-                    <Button Style="{StaticResource ToolButton}" Click="SpeakAll_Click" Content="&#x1F509;  Alles vorlesen"/>
-                    <Button Style="{StaticResource BigNavButton}" Click="Speak_Click" Content="&#x1F50A;  Zum Vorlesen"/>
-                    <Button Style="{StaticResource ToolButton}" Click="Quit_Click" Content="&#x23FB;  Beenden"/>
+                <UniformGrid Grid.Row="0" Rows="1" Margin="0,0,150,4">
+                    <Button Style="{StaticResource SmallToolButton}" Click="New_Click" Content="&#x1F5D1;  Alles löschen"/>
+                    <Button Style="{StaticResource SmallToolButton}" Click="Open_Click" Content="&#x1F4C2;  Öffnen"/>
+                    <Button Style="{StaticResource SmallToolButton}" Click="Save_Click" Content="&#x1F4BE;  Exportieren"/>
+                    <Button Style="{StaticResource SmallToolButton}" Click="Settings_Click" Content="&#x2699;  Einstellungen"/>
+                    <Button Style="{StaticResource SmallToolButton}" Click="SpeakAll_Click" Content="&#x1F509;  Alles vorlesen"/>
+                    <Button Style="{StaticResource SmallNavButton}" Click="Speak_Click" Content="&#x1F50A;  Zum Vorlesen"/>
+                    <Button Style="{StaticResource SmallToolButton}" Click="Quit_Click" Content="&#x23FB;  Beenden"/>
                 </UniformGrid>
 
                 <Border Grid.Row="1" x:Name="WritingEditorHost" Background="{StaticResource PanelBackground}" CornerRadius="10" Padding="4">
@@ -244,7 +259,7 @@
                     <RowDefinition Height="2*"/>
                 </Grid.RowDefinitions>
 
-                <WrapPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,158,6">
+                <WrapPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,150,6">
                     <Button Style="{StaticResource BigNavButton}" Click="Write_Click" Content="&#x270F;  Zum Schreiben"/>
                     <Button Style="{StaticResource ToolButton}" MinHeight="72" Click="Settings_Click" Content="&#x2699;  Einstellungen"/>
                 </WrapPanel>
@@ -363,7 +378,7 @@
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
-                <WrapPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,158,6">
+                <WrapPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,150,6">
                     <Button Style="{StaticResource BigNavButton}" Click="Write_Click" Content="&#x270F;  Zum Schreiben"/>
                     <Button Style="{StaticResource ToolButton}" MinHeight="72" Click="Speak_Click" Content="&#x1F50A;  Zum Vorlesen"/>
                 </WrapPanel>

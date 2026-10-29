@@ -12,7 +12,7 @@
         <Style x:Key="KeyButtonStyle" TargetType="Button">
             <Setter Property="MinHeight" Value="40"/>
             <Setter Property="Margin" Value="7"/>
-            <Setter Property="FontSize" Value="40"/>
+            <Setter Property="FontSize" Value="54"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Foreground" Value="{StaticResource KeyForeground}"/>
             <Setter Property="Background" Value="{StaticResource KeyBlue}"/>

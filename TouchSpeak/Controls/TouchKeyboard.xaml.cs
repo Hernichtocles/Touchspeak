@@ -74,35 +74,35 @@ public partial class TouchKeyboard : UserControl
 
             case KeyType.Space:
                 button.Content = key.Label;
-                button.FontSize = 32;
+                button.FontSize = 38;
                 button.Click += (_, _) => SpacePressed?.Invoke();
                 button.Background = Res("KeyBlueDark");
                 break;
 
             case KeyType.Backspace:
                 button.Content = key.Label;
-                button.FontSize = 28;
+                button.FontSize = 32;
                 button.Click += (_, _) => BackspacePressed?.Invoke();
                 button.Background = Res("KeyBlueDark");
                 break;
 
             case KeyType.DeleteWord:
                 button.Content = key.Label;
-                button.FontSize = 28;
+                button.FontSize = 32;
                 button.Click += (_, _) => DeleteWordPressed?.Invoke();
                 button.Background = Res("KeyBlueDark");
                 break;
 
             case KeyType.Enter:
                 button.Content = key.Label;
-                button.FontSize = 28;
+                button.FontSize = 32;
                 button.Click += (_, _) => EnterPressed?.Invoke();
                 button.Background = Res("KeyBlueDark");
                 break;
 
             case KeyType.Shift:
                 button.Content = key.Label;
-                button.FontSize = 42;
+                button.FontSize = 50;
                 button.Background = Res("KeyBlueDark");
                 button.Tag = _shift ? "on" : null;   // aktive Umschaltung: gelb (Style-Trigger)
                 button.Click += (_, _) => { _shift = !_shift; Rebuild(); };
@@ -110,14 +110,14 @@ public partial class TouchKeyboard : UserControl
 
             case KeyType.SwitchLayout:
                 button.Content = key.Label;
-                button.FontSize = 24;
+                button.FontSize = 26;
                 button.Background = Res("KeyBlueDark");
                 button.Click += (_, _) => { _useFrequency = !_useFrequency; LayoutChanged?.Invoke(_useFrequency); Rebuild(); };
                 break;
 
             case KeyType.Phrase:
                 button.Content = key.Label;
-                button.FontSize = 32;
+                button.FontSize = 38;
                 button.Background = Res("KeyBlueDark");
                 button.Click += (_, _) => PhraseInput?.Invoke(key.Lower);
                 break;
